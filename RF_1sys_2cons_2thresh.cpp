@@ -12,6 +12,7 @@
 #include <random>
 #include <cmath>
 #include <algorithm>
+#include <boost/math/distributions/normal.hpp>
 
 // user inputs for N_0, number of macro-rep, number of systems, number of constraints
 // and number of thresholds of all constraint (if constraints have different number
@@ -46,7 +47,6 @@ double maxfn(double x, double y);
 
 double normal(double rmean, double rvar);
 double configuration(void);
-//double generate_multiNormal(int numConstraint, int case_index);
 double generate_Bernoulli(int numConstraint, int case_index);
 int read_chol_matrix(void);
 
@@ -112,8 +112,8 @@ int main()
             // generate initial samples
             double sumY[NumConstraint];     //obs 값들의 합
             double sum_squareY[NumConstraint];      //obs값들의 sum square
-            double sumYq[NumConstraint];    //obs 값 - q의 값들의 합
-            double avgY[NumConstraint];    // Nnot 까지 obs 값들의 평균
+            //double sumYq[NumConstraint];    //obs 값 - q의 값들의 합
+            //double avgY[NumConstraint];    // Nnot 까지 obs 값들의 평균
 
             int surviveConstraint = NumConstraint;
             int surviveThreshold[NumConstraint];
@@ -121,8 +121,8 @@ int main()
             for (int j = 0; j < NumConstraint; j++) {
                 sumY[j] = 0;
                 sum_squareY[j] = 0;
-                sumYq[j] = 0;
-                avgY[j] = 0;
+            //    sumYq[j] = 0;
+            //    avgY[j] = 0;
             }
 
             for (int n = 0; n < Nnot; n++) {    //Nnot 만큼 최초 obs 생성
@@ -144,7 +144,7 @@ int main()
 
             // find continuation region. 일단 Nnot까지 한거에 대해서 구함
             for (int j = 0; j < NumConstraint; j++) {
-                avgY[j] = sumY[j] / Nnot;
+                //avgY[j] = sumY[j] / Nnot;
                 Sil2[i][j] = (sum_squareY[j] - (sumY[j] * sumY[j]) / Nnot) / (Nnot - 1);
                 //Sil2[i][j] = (sum_squareY[j] / (Nnot - 1)) -(sumY[j] / (Nnot - 1)) * (sumY[j] / Nnot);
                 R[i][j] = maxfn(0, (Nnot - 1) * Sil2[i][j] * (eta[j]) / epsilon[j] - epsilon[j] * num_obs[i][j] / 2);
@@ -289,7 +289,7 @@ int read_chol_matrix() {
     char ch;
 
     // change the input file depending on the correlation between constraints
-    std::ifstream myfile("cholMatrix_rho0.txt");
+    std::ifstream myfile("cholMatrix_rho0.7.txt");
     if (myfile.is_open()) {
         int case_counter = 0;
         int pair_counter = 0;
@@ -314,60 +314,6 @@ int read_chol_matrix() {
     return 0;
 }
 
-//double generate_multiNormal(int numConstraint, int case_index) {
-//    double std_normal[numConstraint];
-//    for (int i = 0; i < numConstraint; i++) {
-//        std_normal[i] = normal(0, 1);
-//    }
-//
-//    // C matrix is directly input from read_chol_matrix()
-//    // choose case_index to denote CV, IV or DV
-//    // observation = mu + CZ
-//    double C[numConstraint][numConstraint];
-//
-//    switch (case_index) {
-//    case 1:  // constant variance (CV)
-//
-//        for (int i = 0; i < numConstraint; i++) {
-//            for (int j = 0; j < numConstraint; j++) {
-//                C[i][j] = chol_matrix[0][i][j];
-//            }
-//        }
-//        break;
-//
-//    case 2:  // increasing variance (IV)
-//
-//        for (int i = 0; i < numConstraint; i++) {
-//            for (int j = 0; j < numConstraint; j++) {
-//                C[i][j] = chol_matrix[1][i][j];
-//            }
-//        }
-//        break;
-//
-//    case 3:  // decreasing variance (DV)
-//
-//        for (int i = 0; i < numConstraint; i++) {
-//            for (int j = 0; j < numConstraint; j++) {
-//                C[i][j] = chol_matrix[2][i][j];
-//            }
-//        }
-//        break;
-//    }
-//
-//
-//    for (int i = 0; i < NumSys; i++) {
-//        for (int j = 0; j < numConstraint; j++) {
-//            double temp = 0;
-//            for (int k = 0; k < numConstraint; k++) {
-//                temp += C[j][k] * std_normal[k];
-//            }
-//            observations[i][j] = mean_value[i][j] + temp;
-//        }
-//    }
-//
-//    return 0;
-//}
-
 //NORTA로 correlated observations 생성
 double generate_Bernoulli(int numConstraint, int case_index) {
 
@@ -375,11 +321,9 @@ double generate_Bernoulli(int numConstraint, int case_index) {
     std::vector<double> p(numConstraint);
 
     numBatches[0] = 100;
-    numBatches[1] = 30;
+    //numBatches[1] = 10;
     p[0] = 0.85;
     p[1] = 0.6;
-
-    std::vector<double> std_normal(numConstraint);
 
     // C matrix is directly input from read_chol_matrix()
     // choose case_index to denote CV, IV or DV
@@ -392,6 +336,7 @@ double generate_Bernoulli(int numConstraint, int case_index) {
         for (int i = 0; i < numConstraint; i++) {
             for (int j = 0; j < numConstraint; j++) {
                 C[i][j] = chol_matrix[0][i][j];
+                
             }
         }
         break;
@@ -416,26 +361,40 @@ double generate_Bernoulli(int numConstraint, int case_index) {
     }
 
     for (int i = 0; i < NumSys; i++) {
-        for (int j = 0; j < numConstraint; j++) {
-            int successes = 0;
-            for (int k = 0; k < numBatches[j]; k++) {
-                // Generate independent standard normal random variables
-                for (int l = 0; l < numConstraint; l++) {
-                    std_normal[l] = normal(0, 1);
+        std::vector<double> std_normal(numConstraint);
+        std::vector<double> correlated_normal(numConstraint);
+        std::vector<int> successes(numConstraint);
+        std::vector<double> x_value(numConstraint);
+
+        successes[0] = 0;
+        successes[1] = 0;
+        boost::math::normal_distribution<> standard_normal;
+        x_value[0] = boost::math::quantile(standard_normal, p[0]);
+        x_value[1] = boost::math::quantile(standard_normal, p[1]);
+
+        for (int k = 0; k < numBatches[0]; k++) {
+            // Generate independent standard normal random variables
+            for (int l = 0; l < numConstraint; l++) {
+                std_normal[l] = normal(0, 1);
+            }
+
+            // Calculate correlated normal random variables and convert to Bernoulli
+            for (int j = 0; j < numConstraint; j++) {
+                correlated_normal[j] = 0;
+                for (int m = 0; m < numConstraint; m++) {
+                    correlated_normal[j] += C[j][m] * std_normal[m];
                 }
 
-                // Calculate correlated normal random variables
-                double correlated_normal = 0;
-                for (int l = 0; l < numConstraint; l++) {
-                    correlated_normal += C[j][l] * std_normal[l];
-                }
-
-                // Convert correlated normal random variables to Bernoulli
-                if (correlated_normal < std::sqrt(p[j] * (1 - p[j]))) {
-                    successes++;
+                if (correlated_normal[j] < x_value[j]) {
+                    successes[j]++;
                 }
             }
-            observations[i][j] = static_cast<double>(successes) / numBatches[j];
+        }
+
+        // Divide the number of successes by the number of batches for each constraint
+        for (int j = 0; j < numConstraint; j++) {
+            observations[i][j] = static_cast<double>(successes[j]) / numBatches[0];
+            //printf("obs: % .2f\n", observations[i][j]);
         }
     }
 
@@ -462,10 +421,10 @@ double configuration(void) {
     }
 
     // two constraints and two thresholds
-    for (int j=0; j<NumConstraint; j++) {
-        q[0][j] = mean_value[0][j] - epsilon[j];
-        q[1][j] = mean_value[0][j] + epsilon[j];
-    }
+        q[0][0] = 0.84;
+        q[1][0] = 0.86;
+        q[0][1] = 0.55;
+        q[1][1] = 0.65;
 
     return 0;
 }
