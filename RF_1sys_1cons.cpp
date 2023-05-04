@@ -61,15 +61,19 @@ int Z[NumSys][NumConstraint][NumThreshold];
 
 int main()
 {
-    double total_obs;   //총 obs 갯수
+    double total_obs;   //총 obs 갯수 in an iter
     double final_cd;    //correct decision 인지 아닌지
     double correct_decision;    // 최종 correct decision 갯수
     double overall_obs;     // 최종 obs 갯수
 
     correct_decision = 0;
     overall_obs = 0;
-
+    
+    // 1 threshold. 95%
     double alpha = 0.05;
+    // >= 2 threshold
+    // double alpha = 0.025;
+    
     double k = NumSys;
     double s = NumConstraint;
     double n0 = Nnot;
@@ -101,8 +105,8 @@ int main()
 
         for (int i = 0; i < NumSys; i++) {
             for (int j = 0; j < NumConstraint; j++) {
-                Sil2[i][j] = 0;     //l번째 iter에서 i 시스템의 표본분산
-                num_obs[i][j] = 0;      //i번째 시스템의 j 번째 제약에서 갯수
+                Sil2[i][j] = 0;     //l번째 iter에서 i 시스템 j 제약의 표본분산
+                num_obs[i][j] = 0;      //i번째 시스템의 j 번째 제약에서 obs 갯수
             }
         }
 
@@ -111,7 +115,6 @@ int main()
             // generate initial samples
             double sumY[NumConstraint];     //obs 값들의 합
             double sum_squareY[NumConstraint];      //obs값들의 sum square
-            //double sumYq[NumConstraint];    //obs 값 - q의 값들의 합
 
             int surviveConstraint = NumConstraint;
             int surviveThreshold[NumConstraint];
@@ -123,7 +126,7 @@ int main()
 
             for (int n = 0; n < Nnot; n++) {    //Nnot 만큼 최초 obs 생성
                 generate_Bernoulli(NumConstraint);  // obs 하나 만듦 (베르누이 분포에서 평균)
-                total_obs += 1;     // constraint와 상관없이 시스템의 총 obs 갯수 모든 시스템에 대해 같이 증가함.
+                total_obs += 1;     // constraint와 상관없이 시스템의 총 obs 갯수 모든 const에 대해 같이 증가함.
 
                 for (int j = 0; j < NumConstraint; j++) {
                     sumY[j] += observations[i][j];
@@ -180,7 +183,7 @@ int main()
                 if (surviveConstraint == 0) break;  //검사 안한 제약이 없으면 종료
 
                 generate_Bernoulli(NumConstraint);      //만약 위 조건을 만족 안했었다면 obs 하나 더 생성
-                total_obs += 1;     //시스템의 total obs도 하나 늘리기
+                total_obs += 1;     //total obs도 하나 늘리기
 
                 for (int j = 0; j < NumConstraint; j++) {
                     sumY[j] += observations[i][j];
@@ -228,11 +231,11 @@ int main()
 
         }
 
-        if (final_cd == 1) {    //iteration에서 correct decision의 개수를 세주자
+        if (final_cd == 1) {    //최종 1이면 correct decision의 개수 하나 올려주기
             correct_decision++;
         }
 
-        overall_obs += total_obs;   //각 시스템마다 했던 obs 갯수를 다 더함
+        overall_obs += total_obs;   //각 iter마다 했던 obs 갯수를 다 더함
 
     }
 
