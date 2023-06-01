@@ -164,7 +164,7 @@ int main()
             for (int j = 0; j < NumConstraint; j++) {
                 //avgY[j] = sumY[j] / Nnot;
                 //Sil2[i][j] = (sum_squareY[j] - (sumY[j] * sumY[j]) / Nnot) / (Nnot - 1);
-                Sil2[i][j] = (sum_squareY[j] / (Nnot - 1)) -(sumY[j] / (Nnot - 1)) * (sumY[j] / Nnot);
+                Sil2[i][j] = (sum_squareY[j] / (Nnot - 1)) - (sumY[j] / (Nnot - 1)) * (sumY[j] / Nnot);
                 R[i][j] = maxfn(0, (Nnot - 1) * Sil2[i][j] * (eta[j]) / epsilon[j] - epsilon[j] * num_obs[i][j] / 2);
                 //R[i][j] = (Nnot-1)*Sil2[i][j]*(eta[j])/epsilon[j];    //평행선 continuation
             }
@@ -307,7 +307,7 @@ int read_chol_matrix() {
     char ch;
 
     // change the input file depending on the correlation between constraints
-    std::ifstream myfile("cholMatrix_rho-0.25.txt");
+    std::ifstream myfile("cholMatrix_rho0.txt");
     if (myfile.is_open()) {
         int case_counter = 0;
         int pair_counter = 0;
@@ -343,8 +343,8 @@ double generate_Bernoulli(int numConstraint, int case_index) {
     //numBatches[1] = 10;
     p[0] = 0.85;
     p[1] = 0.6;
-    //vari[0] = p[0] * (1 - p[0]) / numBatches[0];
-    //vari[1] = p[1] * (1 - p[1]) / numBatches[0];
+    vari[0] = p[0] * (1 - p[0]) / numBatches[0];
+    vari[1] = p[1] * (1 - p[1]) / numBatches[0];
 
 
     // C matrix is directly input from read_chol_matrix()
