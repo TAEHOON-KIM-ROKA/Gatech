@@ -146,8 +146,8 @@ double generate_Bernoulli(int numConstraint, int case_index) {
 
     numBatches[0] = 1;
     //numBatches[1] = 10;
-    truep[0] = 0.1;
-    truep[1] = 0.4;
+    truep[0] = 0.85;
+    truep[1] = 0.5;
     //vari[0] = p[0] * (1 - p[0]) / numBatches[0];
     //vari[1] = p[1] * (1 - p[1]) / numBatches[0];
 
@@ -243,8 +243,8 @@ double configuration(void) {
 
     for (int i = 0; i < NumSys; i++) {
         for (int j = 0; j < NumConstraint; j++) {
-            mean_value[i][0] = 0.1;
-            mean_value[i][1] = 0.4;
+            mean_value[i][0] = 0.85;
+            mean_value[i][1] = 0.5;
             ON[i][j] = 1;
             for (int d = 0; d < NumThreshold; d++) {
                 ON_l[i][j][d] = 1;
@@ -260,11 +260,11 @@ double configuration(void) {
     }*/
 
     // two constraints and two thresholds
-    q[0][0] = 0.09;
-    q[1][0] = 0.11;
+    q[0][0] = 0.8;
+    q[1][0] = 0.9;
     //q[2][0] = 0.70;
-    q[0][1] = 0.35;
-    q[1][1] = 0.45;
+    q[0][1] = 0.55;
+    q[1][1] = 0.65;
     //q[2][1] = 0.30;
 
     for (int j = 0; j < NumConstraint; j++) {
@@ -477,7 +477,7 @@ int main()
                             cd_for_one_threshold *= 0;  // incorrect decision
                         }
                     }
-                    else if (mean_value[i][j] >= ( q[d][j] * theta[j] / ( (1 - q[d][j]) + q[d][j] * theta[j]) ) ) {    //tolerance level을 더한 q보다 mean value가 크다면,
+                    else if (mean_value[i][j] >= (q[d][j] * theta[j] / ((1 - q[d][j]) + q[d][j] * theta[j]))) {    //tolerance level을 더한 q보다 mean value가 크다면,
                         if (Z[i][j][d] == 0) {  //만약 infeasible하게 판단했다면, 
                             cd_for_one_threshold *= 1;  //correct decision
                         }
@@ -498,10 +498,10 @@ int main()
                 final_cd *= 0;  //최종 incorrect
             }
 
-            //int n = X.size();
-            //double correlation = correlationCoefficient(X, Y, n);
-            //printf("corr: %.5f\n", correlation);
-            //overall_corr += correlation;
+            int n = X.size();
+            double correlation = correlationCoefficient(X, Y, n);
+            printf("corr: %.5f\n", correlation);
+            overall_corr += correlation;
 
         }
 
