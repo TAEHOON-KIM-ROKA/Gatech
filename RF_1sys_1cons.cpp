@@ -15,7 +15,7 @@
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define Nnot	10
+#define Nnot	20
 #define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	1
@@ -72,7 +72,7 @@ int main()
     // 1 threshold. 95%
     double alpha = 0.05;
     // >= 2 threshold
-    // double alpha = 0.025;
+    //double alpha = 0.025;
     
     double k = NumSys;
     double s = NumConstraint;
@@ -163,7 +163,7 @@ int main()
                                     surviveThreshold[j] -= 1;
                                 }
 
-                                if ((sumY[j] - R[i][j]) / num_obs[i][j] >= q[d][j]) {   // infeasible 조건
+                                else if ((sumY[j] - R[i][j]) / num_obs[i][j] >= q[d][j]) {   // infeasible 조건
                                     Z[i][j][d] = 0;     // i 시스템의 j 제약의 d번째 threshold에 대해 infeasible
                                     ON_l[i][j][d] = 0;      // 해당 threshold를 검사한거로 변경
                                     surviveThreshold[j] -= 1;
@@ -265,8 +265,8 @@ double MRG32k3a() //L'ecuyer Random number generator(0,1)
 
 double generate_Bernoulli(int numConstraint) {
 
-    int numBatches = 1;
-    double p = 0.85;
+    int numBatches = 32;
+    double p = 0.95;
 
     for (int i = 0; i < NumSys; i++) {
         for (int j = 0; j < numConstraint; j++) {
@@ -288,7 +288,7 @@ double configuration(void) {
 
     for (int i = 0; i < NumSys; i++) {
         for (int j = 0; j < NumConstraint; j++) {
-            mean_value[i][j] = 0.85;
+            mean_value[i][j] = 0.95;
             ON[i][j] = 1;
             for (int d = 0; d < NumThreshold; d++) {
                 ON_l[i][j][d] = 1;
@@ -298,15 +298,15 @@ double configuration(void) {
     // Single system
     // system_info[0] = 1;
     for (int j = 0; j < NumConstraint; j++) {
-        epsilon[j] = 0.01;
+        epsilon[j] = 0.019184;
     }
     
     //one threshold
-    q[0][0] = 0.86;
+    q[0][0] = 0.94;
 
     //two threshold
-    /*q[0][0] = 0.8;
-    q[1][0] = 0.9;*/
+    /* q[0][0] = 0.94;
+    q[1][0] = 0.96; */
 
     //20 thresholds
     /*for (int j = 0; j < NumConstraint; j++) {

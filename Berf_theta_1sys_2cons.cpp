@@ -268,7 +268,7 @@ double configuration(void) {
     //q[2][1] = 0.30;
 
     for (int j = 0; j < NumConstraint; j++) {
-        theta[j] = 1.5;
+        theta[j] = 1.2;
     }
 
     /*for (int j = 0; j < NumConstraint; j++) {
