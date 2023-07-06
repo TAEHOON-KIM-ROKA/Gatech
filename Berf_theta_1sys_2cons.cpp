@@ -26,7 +26,7 @@ using namespace std;
 #define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	2
-#define NumThreshold	2
+#define NumThreshold	10
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -110,7 +110,7 @@ int read_chol_matrix() {
     double c1, c2, c3, c4, c5;
     char ch;
 
-    std::ifstream myfile("cholMatrix_rho0.txt");
+    std::ifstream myfile("cholMatrix_rho0.7.txt");
     if (myfile.is_open()) {
         int case_counter = 0;
         int row_counter = 0;  // renamed to make the purpose more clear
@@ -147,7 +147,7 @@ double generate_Bernoulli(int numConstraint, int case_index) {
     numBatches[0] = 1;
     //numBatches[1] = 10;
     truep[0] = 0.85;
-    truep[1] = 0.5;
+    truep[1] = 0.6;
     //vari[0] = p[0] * (1 - p[0]) / numBatches[0];
     //vari[1] = p[1] * (1 - p[1]) / numBatches[0];
 
@@ -244,7 +244,7 @@ double configuration(void) {
     for (int i = 0; i < NumSys; i++) {
         for (int j = 0; j < NumConstraint; j++) {
             mean_value[i][0] = 0.85;
-            mean_value[i][1] = 0.5;
+            mean_value[i][1] = 0.6;
             ON[i][j] = 1;
             for (int d = 0; d < NumThreshold; d++) {
                 ON_l[i][j][d] = 1;
@@ -260,12 +260,32 @@ double configuration(void) {
     }*/
 
     // two constraints and two thresholds
-    q[0][0] = 0.8;
+    /* q[0][0] = 0.8;
     q[1][0] = 0.9;
-    //q[2][0] = 0.70;
     q[0][1] = 0.55;
-    q[1][1] = 0.65;
-    //q[2][1] = 0.30;
+    q[1][1] = 0.65; */
+
+    //multiple thresholds
+    q[0][0] = 0.5;
+    q[1][0] = 0.55;
+    q[2][0] = 0.6;
+    q[3][0] = 0.65;
+    q[4][0] = 0.7;
+    q[5][0] = 0.75;
+    q[6][0] = 0.8;
+    q[7][0] = 0.85;
+    q[8][0] = 0.9;
+    q[9][0] = 0.95;
+    q[0][1] = 0.5;
+    q[1][1] = 0.55;
+    q[2][1] = 0.6;
+    q[3][1] = 0.65;
+    q[4][1] = 0.7;
+    q[5][1] = 0.75;
+    q[6][1] = 0.8;
+    q[7][1] = 0.85;
+    q[8][1] = 0.9;
+    q[9][1] = 0.95;
 
     for (int j = 0; j < NumConstraint; j++) {
         theta[j] = 1.2;
