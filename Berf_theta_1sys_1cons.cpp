@@ -122,9 +122,7 @@ double configuration(void) {
     }
     // Single system
     // system_info[0] = 1;
-    /*for (int j = 0; j < NumConstraint; j++) {
-        epsilon[j] = 0.01;
-    }*/
+    
     //one threshold
     //q[0][0] = 0.9;
 
@@ -133,6 +131,9 @@ double configuration(void) {
     q[1][0] = 0.96; */
 
     //20 thresholds
+    for (int j = 0; j < NumConstraint; j++) {
+        epsilon[j] = 0.01;
+    }
     for (int d = 0; d < NumThreshold; d++) {
         if (d <= 9) {
             q[d][0] = 0.75 + d * epsilon[0];
@@ -143,7 +144,7 @@ double configuration(void) {
     }
 
     for (int j = 0; j < NumConstraint; j++) {
-        theta[j] = 1.2;
+        theta[j] = 1.5;
     }
 
     /*for (int j = 0; j < NumConstraint; j++) {
@@ -210,9 +211,9 @@ int main()
         for (int i = 0; i < NumSys; i++) {
             for (int j = 0; j < NumConstraint; j++) {
                 H[i][j] = std::ceil(fsolve());
+                //H[i][j] = 11;
                 //printf("theta: %.10f\n", theta[j]);
                 printf("H: %.10f\n", H[i][j]);
-                //H[i][j] = 3;
             }
         }
 
