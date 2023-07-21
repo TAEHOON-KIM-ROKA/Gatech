@@ -26,7 +26,7 @@ using namespace std;
 #define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	2
-#define NumThreshold	10
+#define NumThreshold	2
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -110,7 +110,7 @@ int read_chol_matrix() {
     double c1, c2, c3, c4, c5;
     char ch;
 
-    std::ifstream myfile("cholMatrix_rho0.7.txt");
+    std::ifstream myfile("cholMatrix_rho0.txt");
     if (myfile.is_open()) {
         int case_counter = 0;
         int row_counter = 0;  // renamed to make the purpose more clear
@@ -260,13 +260,13 @@ double configuration(void) {
     }*/
 
     // two constraints and two thresholds
-    /* q[0][0] = 0.8;
+    q[0][0] = 0.8;
     q[1][0] = 0.9;
     q[0][1] = 0.55;
-    q[1][1] = 0.65; */
+    q[1][1] = 0.65;
 
     //multiple thresholds
-    q[0][0] = 0.5;
+    /* q[0][0] = 0.5;
     q[1][0] = 0.55;
     q[2][0] = 0.6;
     q[3][0] = 0.65;
@@ -285,7 +285,7 @@ double configuration(void) {
     q[6][1] = 0.8;
     q[7][1] = 0.85;
     q[8][1] = 0.9;
-    q[9][1] = 0.95;
+    q[9][1] = 0.95; */
 
     for (int j = 0; j < NumConstraint; j++) {
         theta[j] = 1.2;
@@ -344,7 +344,7 @@ struct f {
     //double alpha = 0.025;
     double k = NumSys;
     double s = NumConstraint;
-    double beta = alpha / (2 * k * s);
+    double beta = (1 - (std::pow( (1-alpha), 1/k))) / (2 * s);
 
     double operator()(double ell) {
         return (1 / (1 + std::pow(theta[0], ell)) - beta);
