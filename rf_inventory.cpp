@@ -126,6 +126,7 @@ int main()
 
    			for (int n=0; n<Nnot; n++) {
    				generate_one_obs(i, demand_index);
+          
                 demand_index += 30;
    				total_obs += 1;
 

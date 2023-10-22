@@ -23,9 +23,9 @@ using namespace std;
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
 #define NumMacro 1000
-#define NumSys	77
-#define NumConstraint	1
-#define NumThreshold	4
+#define NumSys	84
+#define NumConstraint	2
+#define NumThreshold	6
 #define Num_s 20
 #define Num_S 20
 
@@ -271,7 +271,7 @@ double configuration(void) {
     }
 
     //epsilon[0] = 0.001;
-    //epsilon[1] = 0.5;
+    
 
   // set threshold value
     q[0][0] = 0.01;
@@ -280,6 +280,7 @@ double configuration(void) {
     q[0][3] = 0.2;
 
     theta[0] = 1.5;
+    epsilon[1] = 1;
 
 	return 0;
 }
