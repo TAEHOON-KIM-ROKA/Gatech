@@ -223,7 +223,7 @@ double configuration(void) {
     // q[5][1] = 700;
 
     theta[0] = 1.2;
-    epsilon[1] = 1;
+    epsilon[1] = 2;
 
     return 0;
 }
@@ -308,7 +308,7 @@ int main()
                     double s = NumConstraint;
                     double n0 = Nnot;
 
-                    double beta = (1 - (std::pow( (1-alpha), 1/k))) / (2*s); //이부분 체크해보자.
+                    double beta = (1 - (std::pow( (1-alpha), 1/k))) / (2*s);
                     printf("beta: %.10f\n", beta);
                     eta[1] = (pow(2 * beta, -1 * (2 / (n0 - 1))) - 1) / 2;
                     printf("eta: %.10f\n", eta[1]);
