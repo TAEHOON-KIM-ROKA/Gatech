@@ -223,8 +223,9 @@ double configuration(void) {
     // q[4][1] = 680;
     // q[5][1] = 700;
 
-    epsilon[0] = 0.007983;
-    epsilon[1] = 2;
+    //epsilon[0] = 0.016102;    //theta = 1.5
+    epsilon[0] = 0.007983;      //theta = 1.2
+    epsilon[1] = 2.5;
 
     return 0;
 }
@@ -305,9 +306,9 @@ int main()
                 double n0 = Nnot;
 
                 double beta = (1 - (std::pow( (1-alpha), 1/k))) / (2*s);
-                printf("beta: %.10f\n", beta);
+                //printf("beta: %.10f\n", beta);
                 eta[j] = (pow(2 * beta, -1 * (2 / (n0 - 1))) - 1) / 2;
-                printf("eta: %.10f\n", eta[j]);
+                //printf("eta: %.10f\n", eta[j]);
 
                 Sil2[i][j] = 0;
                 num_obs[i][j] = 0;
