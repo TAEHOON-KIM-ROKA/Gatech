@@ -222,7 +222,7 @@ double configuration(void) {
     // q[4][1] = 680;
     // q[5][1] = 700;
 
-    theta[0] = 1.2;
+    theta[0] = 1.5;
     epsilon[1] = 5;
 
     return 0;
@@ -504,21 +504,26 @@ int main()
                         if (system_true_value[i][j] <= (q[d][j] / (q[d][j] + (1 - q[d][j]) * theta[j]))) {  
                             if (Z[i][j][d] == 1) {     
                                 cd_for_one_threshold *= 1; 
+                                //printf("s %d cons1 Correct\n", i+1);
                             }
                             else {
-                                cd_for_one_threshold *= 0;  
+                                cd_for_one_threshold *= 0;
+                                //printf("s %d cons1 Incorrect\n", i+1);  
                             }
                         }
                         else if (system_true_value[i][j] >= (q[d][j] * theta[j] / ((1 - q[d][j]) + q[d][j] * theta[j]))) {   
                             if (Z[i][j][d] == 0) {  
-                                cd_for_one_threshold *= 1;  
+                                cd_for_one_threshold *= 1;
+                                //printf("s %d cons1 Correct\n", i+1);  
                             }
                             else {
-                                cd_for_one_threshold *= 0; 
+                                cd_for_one_threshold *= 0;
+                                //printf("s %d cons1 Incorrect\n", i+1); 
                             }
                         }
                         else {
-                            cd_for_one_threshold *= 1; 
+                            cd_for_one_threshold *= 1;
+                            //printf("s %d cons1 Correct\n", i+1); 
                         }
                     //}
                     //else if (j = 1) {
@@ -527,21 +532,26 @@ int main()
                         if (system_true_value[i][j] <= q[d][j] - epsilon[j]) {     //tolerance level을 뺀 q보다 mean value가 작다면,
                             if (Z[i][j][d] == 1) {      // feasible하게 판단했다면,
                                 cd_for_one_threshold *= 1;  // correct decision
+                                //printf("s %d cons2 Correct\n", i+1);
                             }
                             else {
                                 cd_for_one_threshold *= 0;  // incorrect decision
+                                //printf("s %d cons2 Incorrect\n", i+1);
                             }
                         }
                         else if (system_true_value[i][j] >= q[d][j] + epsilon[j]) {    //tolerance level을 더한 q보다 mean value가 크다면,
                             if (Z[i][j][d] == 0) {  //만약 infeasible하게 판단했다면, 
                                 cd_for_one_threshold *= 1;  //correct decision
+                                //printf("s %d cons2 Correct\n", i+1);
                             }
                             else {
                                 cd_for_one_threshold *= 0;  //incorrect
+                                //printf("s %d cons2 Incorrect\n", i+1);
                             }
                         }
                         else {
                             cd_for_one_threshold *= 1;  //Acceptable하니깐 그냥 correct decision이라고 하자.
+                            //printf("s %d cons2 Correct\n", i+1);
                         }
                     //}
                 //}

@@ -223,9 +223,9 @@ double configuration(void) {
     // q[4][1] = 680;
     // q[5][1] = 700;
 
-    //epsilon[0] = 0.016102;    //theta = 1.5
-    epsilon[0] = 0.007983;      //theta = 1.2
-    epsilon[1] = 2.5;
+    epsilon[0] = 0.016102;    //theta = 1.5
+    //epsilon[0] = 0.007983;      //theta = 1.2
+    epsilon[1] = 5;
 
     return 0;
 }

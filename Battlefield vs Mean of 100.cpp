@@ -25,10 +25,9 @@ using namespace std;
 
 #define NumMacro 1
 #define NumSys	84
-#define NumConstraint	1
+#define NumConstraint	2
 #define NumThreshold	5
 #define Nnot 10
-#define Batchsize 50
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -138,6 +137,7 @@ int read_system_true_value(void) {
 
 struct Observation {
     double observation1;
+    double observation2;
 };
 
 class CSVReader {
@@ -160,6 +160,8 @@ public:
             while (getline(line_stream, cell, ',')) {
                 if (cell_num == 7) {
                     obs.observation1 = stod(cell);
+                } else if (cell_num == 8) {
+                    obs.observation2 = stod(cell);
                 }
                 cell_num++;
             }
@@ -201,6 +203,11 @@ double configuration(void) {
     q[2][0] = 0.15;
     q[3][0] = 0.2;
     q[4][0] = 0.25;
+    q[0][1] = 620;
+    q[1][1] = 640;
+    q[2][1] = 660;
+    q[3][1] = 680;
+    q[4][1] = 700;
 
     // q[0][0] = 0.01;
     // q[1][0] = 0.05;
@@ -215,8 +222,8 @@ double configuration(void) {
     // q[4][1] = 680;
     // q[5][1] = 700;
 
-    epsilon[0] = 0.016102;    //theta = 1.5
-    //epsilon[0] = 0.007983;      //theta = 1.2
+    theta[0] = 1.2;
+    epsilon[1] = 2.5;
 
     return 0;
 }
@@ -271,18 +278,18 @@ int main()
     double overall_obs; 
 
     double n0_counter;
-    int batch_counter;
 
     correct_decision = 0;
     overall_obs = 0;
+    int num_of_incorrect_systems = 0;
 
     for (int l = 0; l < NumMacro; l++) {   
 
         configuration();   
         total_obs = 0;      
         final_cd = 1;  
-        n0_counter = 0;  
-        batch_counter = 0;   
+        n0_counter = 0;
+        int num_of_incorrect_decisions = 0;    
 
         double num_obs[NumSys][NumConstraint];
         double R[NumSys][NumConstraint];
@@ -290,39 +297,43 @@ int main()
 
         for (int i = 0; i < NumSys; i++) {
             for (int j = 0; j < NumConstraint; j++) {
+                //if (j = 0){
+                    H[i][j] = std::ceil(fsolve());
+                    //printf("theta: %.10f\n", theta[j]);
+                    //printf("H: %.10f\n", H[i][j]);
 
-                double alpha = 0.05;
-                double k = NumSys;
-                double s = NumConstraint;
-                double n0 = Nnot;
+                    num_obs[i][0] = 0;
+                //}
+                if (j = 1){
+                    double alpha = 0.05;
+                    double k = NumSys;
+                    double s = NumConstraint;
+                    double n0 = Nnot;
 
-                double beta = (1 - (std::pow( (1-alpha), 1/k))) / (2*s);
-                //printf("beta: %.10f\n", beta);
-                eta[j] = (pow(2 * beta, -1 * (2 / (n0 - 1))) - 1) / 2;
-                //printf("eta: %.10f\n", eta[j]);
+                    double beta = (1 - (std::pow( (1-alpha), 1/k))) / (2*s);
+                    //printf("beta: %.10f\n", beta);
+                    eta[1] = (pow(2 * beta, -1 * (2 / (n0 - 1))) - 1) / 2;
+                    //printf("eta: %.10f\n", eta[1]);
 
-                Sil2[i][j] = 0;
-                num_obs[i][j] = 0;
-                
+                    Sil2[i][1] = 0;
+                    num_obs[i][1] = 0;
+                }
             }
         }
 
         for (int i = 0; i < NumSys; i++) {
 
             n0_counter = 0;
-            batch_counter = 0;
 
             string filename = "data/s" + to_string(i + 1) + ".csv";
             CSVReader reader(filename);
 
             //printf("obs value 1: %.4f\n", observations[i][0]);
             //printf("obs value 2: %.4f\n", observations[i][1]);
-            
 
             // generate initial samples
             double sumY[NumConstraint];  
-            double sum_squareY[NumConstraint];
-            double batch_sum[NumConstraint];
+            double sum_squareY[NumConstraint];  
             double sumI[NumThreshold][NumConstraint];   
 
             int surviveConstraint = NumConstraint;
@@ -331,40 +342,49 @@ int main()
             for (int j = 0; j < NumConstraint; j++) {
                 sumY[j] = 0;
                 sum_squareY[j] = 0;
-                batch_sum[j] = 0;
+                
             }
 
-            for (int n = 0; n < Nnot; n++) {    //Nnot 만큼 최초 obs 생성
+            for (int k = 0; k < 100; k++) {
+
                 Observation obs = reader.readNextObservation();
-                batch_sum[0] += obs.observation1;
-                //printf("obs value 2: %.4f\n", observations[i][1]);
-                total_obs += 1;     // constraint와 상관없이 시스템의 총 obs 갯수 모든 const에 대해 같이 증가함.
-                batch_counter += 1;
-                //mean_value[i][j] = (sumY[j] / Nnot);
+                observations[i][0] = obs.observation1;
+                observations[i][1] = obs.observation2;
 
+                for (int j = 0; j < NumConstraint; j++) {
+                    
+                    sumY[j] += observations[i][j];
+                    sum_squareY[j] += observations[i][j] * observations[i][j];
+                    num_obs[i][j] += 1;
+                }
 
-                for (int j = 0; j < NumConstraint; j++) surviveThreshold[j] = NumThreshold;     //threshold 개수로 survive한거 정의 하고 시작
-
+                total_obs += 1;
             }
 
-            while (surviveConstraint != 0) {
-                for (int j = 0; j < NumConstraint; j++) {
-                    if (batch_counter == 0 && n0_counter >= Nnot) {
+            for (int j = 0; j < NumConstraint; j++) surviveThreshold[j] = NumThreshold;
+
+            
+
+                //for (int j = 0; j < NumConstraint; j++) {
+
+                    //if (j = 0){
+                        int j = 0;
+
                         if (ON[i][j] == 1) {
 
                             for (int d = 0; d < NumThreshold; d++) { 
 
                                 if (ON_l[i][j][d] == 1) {
 
-                                    if ((sumY[j] + R[i][j]) / num_obs[i][j] <= q[d][j]) {     // feasible 조건
-                                        Z[i][j][d] = 1;     // i 시스템의 j 제약의 d번째 threshold에 대해 feasible
-                                        ON_l[i][j][d] = 0;  // 해당 threshold를 검사한거로 변경
+                                    if (sumY[j] <= 100*q[d][j]) { 
+                                        Z[i][j][d] = 1;     
+                                        ON_l[i][j][d] = 0; 
                                         surviveThreshold[j] -= 1;
                                     }
 
-                                    else if ((sumY[j] - R[i][j]) / num_obs[i][j] >= q[d][j]) {   // infeasible 조건
-                                        Z[i][j][d] = 0;     // i 시스템의 j 제약의 d번째 threshold에 대해 infeasible
-                                        ON_l[i][j][d] = 0;      // 해당 threshold를 검사한거로 변경
+                                    else if (sumY[j] >= 100*q[d][j]) { 
+                                        Z[i][j][d] = 0;    
+                                        ON_l[i][j][d] = 0;    
                                         surviveThreshold[j] -= 1;
                                     }
                                 }   
@@ -373,78 +393,122 @@ int main()
                             if (surviveThreshold[j] == 0) { 
                                 ON[i][j] = 0;
                                 surviveConstraint -= 1;
-                                printf("s %d const1 end with %.0f data \n", i+1, num_obs[i][0]*Batchsize);
+                                //printf("s %d BeRF end with %.0f data \n", i+1, num_obs[i][0]);
                             }
                         }
-                    }
-                }
+                    //}
 
-                if (surviveConstraint == 0) break; 
+                    //else if (j = 1){
+                        j = 1;
 
-                else if (reader.isEOFReached()) { 
-                    
-                    printf("****system %d needs more data.**** \n", i+1);
+                        if (ON[i][j] == 1) {    //만약 그 시스템에서 그 constraint가 아직 검사가 안됐다면
 
-                    break;
-                }
+                            for (int d = 0; d < NumThreshold; d++) {    //threshold까지 내려가서 검사
 
-                Observation obs = reader.readNextObservation();
-                batch_sum[0] += obs.observation1;
-                batch_counter += 1;
-                total_obs += 1; 
+                                if (ON_l[i][j][d] == 1) {   //검사 안됐었으면
 
-                if (batch_counter % Batchsize == 0) {
-                    observations[i][0] = batch_sum[0] / Batchsize;
-                    sumY[0] += observations[i][0];
-                    sum_squareY[0] += observations[i][0] * observations[i][0];    
-                    batch_sum[0] = 0;
-                    batch_counter = 0;
-                    num_obs[i][0] += 1;
-                    n0_counter += 1;
-                    //printf("obs value 1: %.4f\n", observations[i][0]);
-                }          
+                                    if (sumY[j] <= 100*q[d][j]) {     // feasible 조건
+                                        Z[i][j][d] = 1;     // i 시스템의 j 제약의 d번째 threshold에 대해 feasible
+                                        ON_l[i][j][d] = 0;  // 해당 threshold를 검사한거로 변경
+                                        surviveThreshold[j] -= 1;
+                                    }
 
-                if (n0_counter == Nnot){
-                    Sil2[i][0] = (sum_squareY[0] / (Nnot - 1)) - (sumY[0] / (Nnot - 1)) * (sumY[0] / Nnot);
-                }
+                                    else if (sumY[j] >= 100*q[d][j]) {   // infeasible 조건
+                                        Z[i][j][d] = 0;     // i 시스템의 j 제약의 d번째 threshold에 대해 infeasible
+                                        ON_l[i][j][d] = 0;      // 해당 threshold를 검사한거로 변경
+                                        surviveThreshold[j] -= 1;
+                                    }
+                                }
+                            }
 
-                R[i][0] = maxfn(0, (Nnot - 1) * Sil2[i][0] * (eta[0]) / epsilon[0] - epsilon[0] * num_obs[i][0] / 2);
-                //R[i][j] = (Nnot-1)*Sil2[i][j]*(eta[j])/epsilon[j];
-
-            }
+                            if (surviveThreshold[j] == 0) {     //더이상 검사안한 threshold가 없으면 해당 constraint도 검사한거로 변경
+                                ON[i][j] = 0;
+                                surviveConstraint -= 1;
+                                //printf("s %d RF end with %.0f data \n", i+1, num_obs[i][1]);
+                            }
+                        }
 
             // check whether the decision is correct
             int cd_for_one_threshold = 1;   
+            int incorrectness = 0;
             for (int d = 0; d < NumThreshold; d++) {  
-                for (int j = 0; j < NumConstraint; j++) { 
-                    if (system_true_value[i][j] <= q[d][j] - epsilon[j]) {     //tolerance level을 뺀 q보다 mean value가 작다면,
-                        if (Z[i][j][d] == 1) {      // feasible하게 판단했다면,
-                            cd_for_one_threshold *= 1;  // correct decision
+                //for (int j = 0; j < NumConstraint; j++) { 
+                    //if (j = 0) {
+                        //mean_value[i][j] = sumY[j] / total_obs;
+                        int j = 0;
+                        if (system_true_value[i][j] <= (q[d][j] / (q[d][j] + (1 - q[d][j]) * theta[j]))) {  
+                            if (Z[i][j][d] == 1) {     
+                                cd_for_one_threshold *= 1; 
+                                //printf("s %d cons1 Correct\n", i+1);
+                            }
+                            else {
+                                cd_for_one_threshold *= 0;
+                                //printf("s %d cons1 Incorrect\n", i+1);
+                                //incorrectness += 1;
+                            }
+                        }
+                        else if (system_true_value[i][j] >= (q[d][j] * theta[j] / ((1 - q[d][j]) + q[d][j] * theta[j]))) {   
+                            if (Z[i][j][d] == 0) {  
+                                cd_for_one_threshold *= 1;
+                                //printf("s %d cons1 Correct\n", i+1);  
+                            }
+                            else {
+                                cd_for_one_threshold *= 0;
+                                //printf("s %d cons1 Incorrect\n", i+1); 
+                                //incorrectness += 1;
+                            }
                         }
                         else {
-                            cd_for_one_threshold *= 0;  // incorrect decision
+                            cd_for_one_threshold *= 1;
+                            //printf("s %d cons1 Correct\n", i+1); 
                         }
-                    }
-                    else if (system_true_value[i][j] >= q[d][j] + epsilon[j]) {    //tolerance level을 더한 q보다 mean value가 크다면,
-                        if (Z[i][j][d] == 0) {  //만약 infeasible하게 판단했다면, 
-                            cd_for_one_threshold *= 1;  //correct decision
+                    //}
+                    //else if (j = 1) {
+                        //mean_value[i][j] = sumY[j] / num_obs[i][j];
+                        j = 1;
+                        if (system_true_value[i][j] <= q[d][j] - epsilon[j]) {     //tolerance level을 뺀 q보다 mean value가 작다면,
+                            if (Z[i][j][d] == 1) {      // feasible하게 판단했다면,
+                                cd_for_one_threshold *= 1;  // correct decision
+                                //printf("s %d cons2 Correct\n", i+1);
+                            }
+                            else {
+                                cd_for_one_threshold *= 0;  // incorrect decision
+                                //printf("s %d cons2 Incorrect\n", i+1);
+                                //incorrectness += 1;
+                            }
+                        }
+                        else if (system_true_value[i][j] >= q[d][j] + epsilon[j]) {    //tolerance level을 더한 q보다 mean value가 크다면,
+                            if (Z[i][j][d] == 0) {  //만약 infeasible하게 판단했다면, 
+                                cd_for_one_threshold *= 1;  //correct decision
+                                //printf("s %d cons2 Correct\n", i+1);
+                            }
+                            else {
+                                cd_for_one_threshold *= 0;  //incorrect
+                                //printf("s %d cons2 Incorrect\n", i+1);
+                                //incorrectness += 1;
+                            }
                         }
                         else {
-                            cd_for_one_threshold *= 0;  //incorrect
+                            cd_for_one_threshold *= 1;  //Acceptable하니깐 그냥 correct decision이라고 하자.
+                            //printf("s %d cons2 Correct\n", i+1);
                         }
-                    }
-                    else {
-                        cd_for_one_threshold *= 1;  //Acceptable하니깐 그냥 correct decision이라고 하자.
-                    }
-                }
+                    //}
+                //}
             }
 
             if (cd_for_one_threshold == 1) {   
                 final_cd *= 1;  
             }
             else {
-                final_cd *= 0;  
+                final_cd *= 0; 
+                incorrectness += 1; 
             }
+
+            // if (incorrectness > 0){
+            //     printf("s %d incorrectness: %d\n", i+1, incorrectness);
+            // }
+
+            num_of_incorrect_decisions += incorrectness;
 
         }
 
@@ -452,12 +516,24 @@ int main()
             correct_decision++;
         }
 
-        overall_obs += total_obs;   //각 iter마다 했던 obs 갯수를 다 더함
+        printf("Macro %d incorrectness: %d\n", l+1, num_of_incorrect_decisions);
 
+        overall_obs += total_obs;   //각 iter마다 했던 obs 갯수를 다 더함
+        num_of_incorrect_systems += num_of_incorrect_decisions;
+
+    }
+
+    for (int i=0; i<NumSys; i++){
+        for (int j=0; j<NumConstraint; j++){
+            for (int d=0; d<NumThreshold; d++){
+                printf("%d\t%d\t%d\t%d\n", i+1, j, d, Z[i][j][d]);
+            }
+        }
     }
 
     printf("Overall PCD: %.10f\n", correct_decision / NumMacro);
     printf("Overall OBS: %.4f\n", overall_obs / NumMacro);
+    printf("Incorrect systems: %d\n", num_of_incorrect_systems / NumMacro);
 
     return 0;
 }
