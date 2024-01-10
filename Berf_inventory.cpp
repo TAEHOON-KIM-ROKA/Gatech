@@ -230,8 +230,9 @@ double generate_one_obs(int system_index, int demand_index) {
       single_obs[0] = 1;
     }
 
+    double rn = MRG32k3a();
     for (int d = 0; d < NumThreshold; d++) {
-      double rn = MRG32k3a();
+      //double rn = MRG32k3a();
       dummies[j][d] = 0;
       if (rn <= q[j][d]) {
         dummies[j][d] = 1;
@@ -279,7 +280,7 @@ double configuration(void) {
     q[0][2] = 0.1;
     q[0][3] = 0.2;
 
-    theta[0] = 1.5;
+    theta[0] = 1.2;
 
 	return 0;
 }
@@ -328,7 +329,7 @@ int main()
     determine_true_feasibility();
 
     outfile = NULL;
-    outfile = fopen("feasibiliy4.out","a");
+    outfile = fopen("feasibiliy_revision2.out","a");
 
     //double eta[NumConstraint];
     //eta[0] = 0.6615;

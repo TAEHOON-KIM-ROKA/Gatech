@@ -230,8 +230,9 @@ double generate_one_obs(int system_index, int demand_index) {
       single_obs[0] = 1;
     }
 
+    double rn = MRG32k3a();
     for (int d = 0; d < NumThreshold; d++) {
-      double rn = MRG32k3a();
+      //double rn = MRG32k3a();
       dummies[j][d] = 0;
       if (rn <= q[j][d]) {
         dummies[j][d] = 1;
@@ -371,7 +372,7 @@ int main()
    			}
 
         generate_one_obs(i, demand_index);
-        demand_index += 30;
+        demand_index += 12;
         total_obs += 1;
 
         for (int j = 0; j < NumConstraint; j++) {
@@ -423,7 +424,7 @@ int main()
    				if (surviveConstraint == 0) break;
 
                 generate_one_obs(i, demand_index);
-                demand_index += 30;
+                demand_index += 12;
                 total_obs += 1;
 
           for (int j = 0; j < NumConstraint; j++) {

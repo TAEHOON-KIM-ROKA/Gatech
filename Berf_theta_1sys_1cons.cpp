@@ -26,6 +26,7 @@ using namespace std;
 #define NumSys	1
 #define NumConstraint	1
 #define NumThreshold	2
+#define probability 0.65
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -89,7 +90,7 @@ double MRG32k3a() //L'ecuyer Random number generator(0,1)
 
 double generate_Bernoulli(int numConstraint) {
 
-    double p = 0.85;
+    double p = probability;
 
     for (int i = 0; i < NumSys; i++) {
         for (int j = 0; j < numConstraint; j++) {
@@ -99,6 +100,7 @@ double generate_Bernoulli(int numConstraint) {
             }
             double rn = MRG32k3a();
             for (int d = 0; d < NumThreshold; d++) {
+                
                 dummies[d][j] = 0;
                 if (rn <= q[d][j]) {
                     dummies[d][j] = 1;
@@ -113,7 +115,7 @@ double configuration(void) {
 
     for (int i = 0; i < NumSys; i++) {
         for (int j = 0; j < NumConstraint; j++) {
-            mean_value[i][j] = 0.85;
+            mean_value[i][j] = probability;
             ON[i][j] = 1;
             for (int d = 0; d < NumThreshold; d++) {
                 ON_l[i][j][d] = 1;
@@ -124,30 +126,29 @@ double configuration(void) {
     // system_info[0] = 1;
     
     //one threshold
-    //q[0][0] = 0.9;
+    //q[0][0] = 0.86;
 
     //two threshold
-    // q[0][0] = 0.8;
-    // q[1][0] = 0.9;
+    q[0][0] = 0.6;
+    q[1][0] = 0.7;
 
     //20 thresholds
-    for (int j = 0; j < NumConstraint; j++) {
-        epsilon[j] = 0.01;
-    }
-    for (int d = 0; d < NumThreshold; d++) {
-        if (d <= 9) {
-            q[d][0] = 0.75 + d * epsilon[0];
-        }
-        else {
-            q[d][0] = 0.85 + (d - 9) * epsilon[0];
-        }
-    }
-
+    // for (int j = 0; j < NumConstraint; j++) {
+    //     epsilon[j] = 0.01;
+    // }
+    // for (int d = 0; d < NumThreshold; d++) {
+    //     if (d <= 9) {
+    //         q[d][0] = 0.75 + d * epsilon[0];
+    //     }
+    //     else {
+    //         q[d][0] = 0.85 + (d - 9) * epsilon[0];
+    //     }
+    // }
 
 
     //theta
     for (int j = 0; j < NumConstraint; j++) {
-        theta[j] = 1.2;
+        theta[j] = 1.5;
     }
 
     /*for (int j = 0; j < NumConstraint; j++) {

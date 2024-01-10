@@ -27,6 +27,8 @@ using namespace std;
 #define NumSys	1
 #define NumConstraint	2
 #define NumThreshold	2
+#define probability1    0.85
+#define probability2    0.6
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -146,8 +148,8 @@ double generate_Bernoulli(int numConstraint, int case_index) {
 
     numBatches[0] = 1;
     //numBatches[1] = 10;
-    truep[0] = 0.85;
-    truep[1] = 0.6;
+    truep[0] = probability1;
+    truep[1] = probability2;
     //vari[0] = p[0] * (1 - p[0]) / numBatches[0];
     //vari[1] = p[1] * (1 - p[1]) / numBatches[0];
 
@@ -219,8 +221,9 @@ double generate_Bernoulli(int numConstraint, int case_index) {
                     successes[j]++;
                 }
 
+                double rn = MRG32k3a();
                 for (int d = 0; d < NumThreshold; d++) {
-                    double rn = MRG32k3a();
+                    
                     dummies[d][j] = 0;
                     if (rn <= q[d][j]) {
                         dummies[d][j] = 1;
@@ -243,8 +246,8 @@ double configuration(void) {
 
     for (int i = 0; i < NumSys; i++) {
         for (int j = 0; j < NumConstraint; j++) {
-            mean_value[i][0] = 0.85;
-            mean_value[i][1] = 0.6;
+            mean_value[i][0] = probability1;
+            mean_value[i][1] = probability2;
             ON[i][j] = 1;
             for (int d = 0; d < NumThreshold; d++) {
                 ON_l[i][j][d] = 1;
@@ -260,35 +263,35 @@ double configuration(void) {
     }*/
 
     // two constraints and two thresholds
-    q[0][0] = 0.8;
-    q[1][0] = 0.9;
+    q[0][0] = 0.84;
+    q[1][0] = 0.86;
     q[0][1] = 0.55;
     q[1][1] = 0.65;
 
     //multiple thresholds
-    /* q[0][0] = 0.5;
-    q[1][0] = 0.55;
-    q[2][0] = 0.6;
-    q[3][0] = 0.65;
-    q[4][0] = 0.7;
-    q[5][0] = 0.75;
-    q[6][0] = 0.8;
-    q[7][0] = 0.85;
-    q[8][0] = 0.9;
-    q[9][0] = 0.95;
-    q[0][1] = 0.5;
-    q[1][1] = 0.55;
-    q[2][1] = 0.6;
-    q[3][1] = 0.65;
-    q[4][1] = 0.7;
-    q[5][1] = 0.75;
-    q[6][1] = 0.8;
-    q[7][1] = 0.85;
-    q[8][1] = 0.9;
-    q[9][1] = 0.95; */
+    // q[0][0] = 0.5;
+    // q[1][0] = 0.55;
+    // q[2][0] = 0.6;
+    // q[3][0] = 0.65;
+    // q[4][0] = 0.7;
+    // q[5][0] = 0.75;
+    // q[6][0] = 0.8;
+    // q[7][0] = 0.85;
+    // q[8][0] = 0.9;
+    // q[9][0] = 0.95;
+    // q[0][1] = 0.5;
+    // q[1][1] = 0.55;
+    // q[2][1] = 0.6;
+    // q[3][1] = 0.65;
+    // q[4][1] = 0.7;
+    // q[5][1] = 0.75;
+    // q[6][1] = 0.8;
+    // q[7][1] = 0.85;
+    // q[8][1] = 0.9;
+    // q[9][1] = 0.95;
 
     for (int j = 0; j < NumConstraint; j++) {
-        theta[j] = 1.2;
+        theta[j] = 1.5;
     }
 
     /*for (int j = 0; j < NumConstraint; j++) {
@@ -520,7 +523,7 @@ int main()
 
             int n = X.size();
             double correlation = correlationCoefficient(X, Y, n);
-            printf("corr: %.5f\n", correlation);
+            //printf("corr: %.5f\n", correlation);
             overall_corr += correlation;
 
         }
