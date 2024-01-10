@@ -25,7 +25,7 @@ using namespace std;
 #define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	1
-#define NumThreshold	20
+#define NumThreshold	2
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -97,8 +97,8 @@ double generate_Bernoulli(int numConstraint) {
             if (MRG32k3a() <= p) {
                 observations[i][j] = 1;
             }
+            double rn = MRG32k3a();
             for (int d = 0; d < NumThreshold; d++) {
-                double rn = MRG32k3a();
                 dummies[d][j] = 0;
                 if (rn <= q[d][j]) {
                     dummies[d][j] = 1;
@@ -127,8 +127,8 @@ double configuration(void) {
     //q[0][0] = 0.9;
 
     //two threshold
-    /* q[0][0] = 0.94;
-    q[1][0] = 0.96; */
+    // q[0][0] = 0.8;
+    // q[1][0] = 0.9;
 
     //20 thresholds
     for (int j = 0; j < NumConstraint; j++) {
@@ -143,8 +143,11 @@ double configuration(void) {
         }
     }
 
+
+
+    //theta
     for (int j = 0; j < NumConstraint; j++) {
-        theta[j] = 1.5;
+        theta[j] = 1.2;
     }
 
     /*for (int j = 0; j < NumConstraint; j++) {

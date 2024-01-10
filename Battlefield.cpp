@@ -222,8 +222,8 @@ double configuration(void) {
     // q[4][1] = 680;
     // q[5][1] = 700;
 
-    theta[0] = 1.5;
-    epsilon[1] = 5;
+    theta[0] = 1.2;
+    epsilon[1] = 2.5;
 
     return 0;
 }
@@ -572,6 +572,14 @@ int main()
 
         overall_obs += total_obs;   //각 iter마다 했던 obs 갯수를 다 더함
 
+    }
+
+    for (int i=0; i<NumSys; i++){
+        for (int j=0; j<NumConstraint; j++){
+            for (int d=0; d<NumThreshold; d++){
+                printf("%d\t%d\t%d\t%d\n", i+1, j, d, Z[i][j][d]);
+            }
+        }
     }
 
     printf("Overall PCD: %.10f\n", correct_decision / NumMacro);
