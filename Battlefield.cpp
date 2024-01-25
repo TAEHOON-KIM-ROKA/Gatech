@@ -27,7 +27,8 @@ using namespace std;
 #define NumSys	84
 #define NumConstraint	2
 #define NumThreshold	5
-#define Nnot 10
+#define Nnot 20
+#define Theta   1.2
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -64,6 +65,7 @@ double dummies[NumThreshold][NumConstraint];
 double q[NumThreshold][NumConstraint];
 double qL[NumThreshold][NumConstraint];
 double qU[NumThreshold][NumConstraint];
+double newq[NumThreshold][NumConstraint];
 double alpha;
 double k;
 double s;
@@ -223,10 +225,11 @@ double configuration(void) {
     // q[5][1] = 700;
 
     theta[0] = 1.2;
-    epsilon[1] = 2.5;
+    epsilon[1] = 5;
 
     return 0;
 }
+
 
 struct f {
     //int idx;
@@ -354,8 +357,8 @@ int main()
             }
 
             //dummy generator
+            double rn = MRG32k3a();
             for (int d = 0; d < NumThreshold; d++) {
-                double rn = MRG32k3a();
                 dummies[d][0] = 0;
                 if (rn <= q[d][0]) {
                     dummies[d][0] = 1;
@@ -464,8 +467,8 @@ int main()
                 //printf("obs value 2: %.4f\n", observations[i][1]);
 
                 //dummy generator
+                double rn = MRG32k3a();
                 for (int d = 0; d < NumThreshold; d++) {
-                    double rn = MRG32k3a();
                     dummies[d][0] = 0;
                     if (rn <= q[d][0]) {
                         dummies[d][0] = 1;

@@ -305,7 +305,7 @@ struct f {
     // >= 2 threshold
     double k = NumSys;
     double s = NumConstraint;
-    double beta = (1 - (std::pow( (1-alpha), 1/k))) / (2 * s);
+    double beta = (alpha/k) / (2 * s);
 
     double operator()(double ell) {
         return (1 / (1 + std::pow(theta[0], ell)) - beta);
@@ -329,7 +329,7 @@ int main()
     determine_true_feasibility();
 
     outfile = NULL;
-    outfile = fopen("feasibiliy_CRN.out","a");
+    outfile = fopen("feasibiliy_CRN3.out","a");
 
     //double eta[NumConstraint];
     //eta[0] = 0.6615;
@@ -351,7 +351,7 @@ int main()
               num_obs[i][j] = 0;
               H[i][j] = std::ceil(fsolve());
               //printf("theta: %.10f\n", theta[j]);
-              //printf("H: %.10f\n", H[i][j]);
+              printf("H: %.10f\n", H[i][j]);
             }
         }
 

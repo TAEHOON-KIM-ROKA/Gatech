@@ -212,7 +212,7 @@ int main()
             for (int j = 0; j < NumConstraint; j++) {
                 H[i][j] = std::ceil(fsolve());
                 //printf("theta: %.10f\n", theta[j]);
-                //printf("H: %.10f\n", H[i][j]);
+                printf("H: %.10f\n", H[i][j]);
             }
         }
 

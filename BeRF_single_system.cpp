@@ -15,6 +15,7 @@
 #include <list>
 #include <boost/math/tools/roots.hpp>
 #include <boost/random.hpp>
+#include <boost/math/distributions/normal.hpp>
 using namespace std;
 
 // user inputs for N_0, number of macro-rep, number of systems, number of constraints
@@ -25,7 +26,21 @@ using namespace std;
 #define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	1
-#define NumThreshold	2
+#define NumThreshold	1
+#define Correlation     0
+
+double probability[NumConstraint] = {0.15   //probability for 1st constraint
+                                   //, 0.4    //probability for 2nd constraint
+                                   };
+
+double theta[NumConstraint] = {1.2  //theta for 1st constraint
+                             //, 1.5  //theta for 2nd constraint
+                             };
+
+double q[NumConstraint][NumThreshold] = {
+                                        {0.16}   //thresholds for 1st constraint
+                                        //,{0.35, 0.45}   //thresholds for 2nd constraint
+                                        }; 
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -36,21 +51,6 @@ using namespace std;
 #define a21      527612.0
 #define a23n    1370589.0
 
-double probability[NumConstraint] = {0.15   //probability for 1st constraint
-                                    //, 0.35    //probability for 2nd constraint
-                                    };
-double theta[NumConstraint] = {1.2};
-double q[NumConstraint][NumThreshold] = 
-{{0.14, 0.16}   //thresholds for 1st constraint
-//,{0.34, 0.36} //thresholds for 2nd constraint
-};
-
-//when NumThreshold = 1
-//double alpha = 0.5;
-
-//when NumThreshold >= 2
-double alpha = 0.25;
-
 double MRG32k3a(void);  //Generate R(0,1) by L'ecuyer (1997)
 // choices of seeds for Generate R(0,1) by L'ecuyer (1997)
 double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
@@ -59,20 +59,20 @@ double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 1
 //double  s10 = 43221, s11 =54332, s12 =65443, s20 =43321, s21 =54532, s22 =61543;
 //double  s10 = 1010, s11 =10, s12 =101, s20 =2001, s21 = 202, s22 = 202;
 
-//double normal(double rmean, double rvar);
+double normal(double rmean, double rvar);
 double configuration(void);
 //double generate_multiNormal(int numConstraint, int case_index);
 double generate_Bernoulli(int numConstraint);
-//int read_chol_matrix(void);
+int read_chol_matrix(void);
+float correlationCoefficient(std::vector<double> X, std::vector<double> Y, int n);
 
 double mean_value[NumSys][NumConstraint];
 double chol_matrix[3][NumConstraint][NumConstraint];
 int system_info[NumSys];
 
 double observations[NumSys][NumConstraint];
-double H[NumSys][NumConstraint];
+double H[NumConstraint];
 double dummies[NumConstraint][NumThreshold];
-//double q[NumConstraint][NumThreshold];
 double qL[NumConstraint][NumThreshold];
 double qU[NumConstraint][NumThreshold];
 double thetas[NumConstraint][NumThreshold];
@@ -100,27 +100,162 @@ double MRG32k3a() //L'ecuyer Random number generator(0,1)
     else return ((p1 - p2) * norm) + 0.000001;
 }
 
-double generate_Bernoulli(int numConstraint) {
+double normal(double rmean, double rvar)
+/* return normal random variable with mean rmean and variance rvar. */
+// this is modified for Fully Sequential Procedure with CRN
+{
+    double V1 = 0, V2 = 0, W = 2, Y = 0, X1 = 0;
+    do {
+        V1 = 2 * MRG32k3a() - 1;
+        V2 = 2 * MRG32k3a() - 1;
+        W = pow(V1, 2) + pow(V2, 2);
 
-    //double p = probability[0];
+    } while (W > 1);
 
-    for (int i = 0; i < NumSys; i++) {
-        for (int j = 0; j < numConstraint; j++) {
-            observations[i][j] = 0;
-            if (MRG32k3a() <= probability[j]) {
-                observations[i][j] = 1;
+    Y = sqrt((-2.00 * log(W)) / W);
+    X1 = rmean + sqrt(rvar) * V1 * Y;
+    return X1;
+}
+
+int read_chol_matrix() {
+    double c1, c2, c3, c4, c5;
+    char ch;
+    //double Correlation = 0.3
+    //std::ifstream myfile("cholMatrix_rho" + to_string(Correlation) + ".txt");
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(1) << Correlation;  // 소수점 이하 한 자리까지
+    std::string fileName = "cholMatrix_rho" + ss.str() + ".txt";
+    std::ifstream myfile(fileName);
+    if (myfile.is_open()) {
+        int case_counter = 0;
+        int row_counter = 0;  // renamed to make the purpose more clear
+        int max_rows = 2;    // we're only interested in the first 2 rows
+        while (myfile >> c1 >> ch >> c2 >> ch >> c3 >> ch >> c4 >> ch >> c5)
+        {
+            // We're only interested in the first 2*2 matrix in each 5*5 matrix
+            if (row_counter < max_rows) {
+                chol_matrix[case_counter][row_counter][0] = c1;
+                chol_matrix[case_counter][row_counter][1] = c2;
+                //chol_matrix[case_counter][row_counter][2] = c3;
+                // you might need to initialize the rest of the elements in this row to some default value
             }
-            double rn = MRG32k3a();
-            for (int d = 0; d < NumThreshold; d++) {
-                
-                dummies[j][d] = 0;
-                if (rn <= q[j][d]) {
-                    dummies[j][d] = 1;
-                }
+            row_counter++;
+            if (row_counter == 5) {  // we've read a complete 5*5 matrix
+                case_counter++;
+                row_counter = 0;
+            }
+            if (case_counter == 3) {  // we've read all 3 5*5 matrices
+                break;
             }
         }
-        return 0;
+        myfile.close();
     }
+    return 0;
+}
+
+double generate_Bernoulli(int numConstraint) {
+
+    if (NumConstraint < 2) {
+        for (int i = 0; i < NumSys; i++) {
+            for (int j = 0; j < numConstraint; j++) {
+                observations[i][j] = 0;
+                if (MRG32k3a() <= probability[j]) {
+                    observations[i][j] = 1;
+                }
+                double prn = MRG32k3a();
+                for (int d = 0; d < NumThreshold; d++) {
+                    dummies[j][d] = 0;
+                    if (prn <= q[j][d]) {
+                        dummies[j][d] = 1;
+                    }
+                }
+            }
+            return 0;
+        }
+    }
+
+    else if (NumConstraint >= 2) {
+        std::vector<std::vector<double>> C(numConstraint, std::vector<double>(numConstraint));
+
+        for (int i = 0; i < numConstraint; i++) {
+            for (int j = 0; j < numConstraint; j++) {
+                C[i][j] = chol_matrix[0][i][j];
+                //printf("C: % .2f\n", C[i][j]);
+            }
+        }
+
+        for (int i = 0; i < NumSys; i++) {
+            std::vector<double> std_normal(numConstraint);
+            std::vector<double> correlated_normal(numConstraint);
+            std::vector<int> successes(numConstraint);
+            std::vector<double> x_value(numConstraint);
+
+            for (int j = 0; j < numConstraint; j++){
+                successes[j] = 0;
+                boost::math::normal_distribution<> standard_normal;
+                x_value[j] = boost::math::quantile(standard_normal, probability[j]);
+            }
+
+            for (int l = 0; l < numConstraint; l++) {
+                    std_normal[l] = normal(0, 1);
+            }
+
+            for (int j = 0; j < numConstraint; j++) {
+
+                correlated_normal[j] = 0;
+                for (int m = 0; m < numConstraint; m++) {
+                    correlated_normal[j] += C[j][m] * std_normal[m];
+                }
+
+                if (correlated_normal[j] < x_value[j]) {
+                    successes[j]++;
+                }
+
+                double prn = MRG32k3a();
+                for (int d = 0; d < NumThreshold; d++) { 
+                    dummies[j][d] = 0;
+                    if (prn <= q[j][d]) {
+                        dummies[j][d] = 1;
+                    }
+                }
+            }
+
+            for (int j = 0; j < numConstraint; j++) {
+                observations[i][j] = static_cast<double>(successes[j]);
+                //printf("obs: % .2f\n", observations[i][j]);
+            }
+            return 0;
+        }
+    }
+}
+
+float correlationCoefficient(std::vector<double> X, std::vector<double> Y, int n)
+{
+    double sum_X = 0, sum_Y = 0, sum_XY = 0;
+    double squareSum_X = 0, squareSum_Y = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        // sum of elements of array X.
+        sum_X = sum_X + X[i];
+
+        // sum of elements of array Y.
+        sum_Y = sum_Y + Y[i];
+
+        // sum of X[i] * Y[i].
+        sum_XY = sum_XY + X[i] * Y[i];
+
+        // sum of square of array elements.
+        squareSum_X = squareSum_X + X[i] * X[i];
+        squareSum_Y = squareSum_Y + Y[i] * Y[i];
+    }
+
+    // use formula for calculating correlation coefficient.
+    float corr = (float)(n * sum_XY - sum_X * sum_Y)
+        / sqrt((n * squareSum_X - sum_X * sum_X)
+            * (n * squareSum_Y - sum_Y * sum_Y));
+
+    return corr;
 }
 
 double configuration(void) {
@@ -135,7 +270,6 @@ double configuration(void) {
         }
     }
     // Single system
-    // system_info[0] = 1;
     
     //one threshold
     //q[0][0] = 0.86;
@@ -176,55 +310,66 @@ double configuration(void) {
     return 0;
 }
 
-struct f {
-    //int idx;
-    //f(int index) : idx(index) {}
-    //double alpha = 0.1;
+// struct f {
+//     //int idx;
+//     //f(int index) : idx(index) {}
+//     //double alpha = 0.1;
 
-    // >= 2 threshold
-    //double alpha = 0.05;
-    double k = NumSys;
-    double s = NumConstraint;
-    double d_l = NumThreshold;
+//     // >= 2 threshold
+//     //double alpha = 0.05;
+//     double k = NumSys;
+//     double s = NumConstraint;
+//     double d_l = NumThreshold;
 
-    double beta = alpha / (k * s);
+//     double beta = alpha / (k * s);
 
-    double operator()(double ell) {
-        return (1 / (1 + std::pow(theta[0], ell)) - beta);
-    }
-};
+//     double operator()(double ell) {
+//         return (1 / (1 + std::pow(theta[0], ell)) - beta);
+//     }
+// };
 
-double fsolve() {
-    const boost::uintmax_t maxit = 1000;
-    boost::uintmax_t it = maxit;
-    const double guess = 1.0;
-    const double min = 0.0;
-    const double max = 2.0;
-    boost::math::tools::eps_tolerance<double> tol((std::numeric_limits<double>::digits * 3) / 2);
-    std::pair<double, double> r = boost::math::tools::bracket_and_solve_root(f(), guess, 2.0, false, tol, it);
-    return r.first + (r.second - r.first) / 2;
-};
+// double fsolve() {
+//     const boost::uintmax_t maxit = 1000;
+//     boost::uintmax_t it = maxit;
+//     const double guess = 1.0;
+//     const double min = 0.0;
+//     const double max = 2.0;
+//     boost::math::tools::eps_tolerance<double> tol((std::numeric_limits<double>::digits * 3) / 2);
+//     std::pair<double, double> r = boost::math::tools::bracket_and_solve_root(f(), guess, 2.0, false, tol, it);
+//     return r.first + (r.second - r.first) / 2;
+// };
 
 int main()
 {
+    read_chol_matrix();
+
     double total_obs;   //총 obs 갯수 in an iter
     double final_cd;    //correct decision 인지 아닌지
     double correct_decision;    // 최종 correct decision 갯수
     double overall_obs;     // 최종 obs 갯수
+    double overall_corr;
 
     correct_decision = 0;
     overall_obs = 0;
+    overall_corr = 0;
 
-    // if CRN is used
-    // beta[0] = (1 - pow(1 - alpha, 1 / k)) / 2;
+    double alpha;
 
-    for (int i = 0; i < NumSys; i++) {
-        for (int j = 0; j < NumConstraint; j++) {
-            H[i][j] = std::ceil(fsolve());
-            //H[i][j] = 11;
-            //printf("theta: %.10f\n", theta[j]);
-            printf("H: %.10f\n", H[i][j]);
-        }
+    if (NumThreshold < 2) alpha = 0.05;
+    else if (NumThreshold >=2) alpha = 0.025;
+
+    double k = NumSys;
+    double s = NumConstraint;
+
+    double beta[NumConstraint];
+    for(int j = 0; j < NumConstraint; j++ ){
+         beta[j] = alpha / (k * s);
+    }
+
+    for(int j = 0; j < NumConstraint; j++){
+        H[j] = (log ((1/beta[j]) - 1))/(log (theta[j]));
+        H[j] = std::ceil(H[j]);
+        printf("H: %.1f\n", H[j]);
     }
 
     for (int l = 0; l < NumMacro; l++) {    // iteration 시작. 
@@ -232,6 +377,8 @@ int main()
         configuration();    //최초설정
         total_obs = 0;      //우선 obs 갯수 0으로 시작
         final_cd = 1;       //일단 cd를 1로 시작
+        std::vector<double> X;
+        std::vector<double> Y;
 
         double num_obs[NumSys][NumConstraint];
 
@@ -261,6 +408,13 @@ int main()
                     sumI[j][d] += dummies[j][d];
                 }
                 num_obs[i][j] += 1;     //각 constraint마다 존재하는 obs의 갯수
+                
+                if (j == 0) {
+                    X.push_back(observations[i][j]);
+                }
+                else if (j == 1) {
+                    Y.push_back(observations[i][j]);
+                }
             }
 
 
@@ -277,13 +431,13 @@ int main()
 
                             if (ON_l[i][j][d] == 1) {   //검사 안됐었으면
 
-                                if (sumY[j] - sumI[j][d] <= -H[i][j]) {     // 첫번째 조건
+                                if (sumY[j] - sumI[j][d] <= -H[j]) {     // 첫번째 조건
                                     Z[i][j][d] = 1;     //
                                     ON_l[i][j][d] = 0;  // 해당 threshold를 검사한거로 변경
                                     surviveThreshold[j] -= 1;
                                 }
 
-                                else if (sumY[j] - sumI[j][d] >= H[i][j]) {   // 두번째 조건
+                                else if (sumY[j] - sumI[j][d] >= H[j]) {   // 두번째 조건
                                     Z[i][j][d] = 0;     //
                                     ON_l[i][j][d] = 0;      // 해당 threshold를 검사한거로 변경
                                     surviveThreshold[j] -= 1;
@@ -311,6 +465,12 @@ int main()
                         sumI[j][d] += dummies[j][d];
                     }
                     num_obs[i][j] += 1;
+                    if (j == 0) {
+                        X.push_back(observations[i][j]);
+                    }
+                    else if (j == 1) {
+                        Y.push_back(observations[i][j]);
+                    }
                 }
 
             }
@@ -350,6 +510,12 @@ int main()
                 final_cd *= 0;  //최종 incorrect
             }
 
+            if (NumConstraint >= 2) {
+                int n = X.size();
+                double correlation = correlationCoefficient(X, Y, n);
+                //printf("corr: %.5f\n", correlation);
+                overall_corr += correlation;
+            }
         }
 
         if (final_cd == 1) {    //최종 1이면 correct decision의 개수 하나 올려주기
@@ -362,6 +528,7 @@ int main()
 
     printf("Overall: %.10f\n", correct_decision / NumMacro);
     printf("Overall: %.4f\n", overall_obs / NumMacro);
+    printf("Overall correlation: %.4f\n", overall_corr / NumMacro);
 
     return 0;
 }

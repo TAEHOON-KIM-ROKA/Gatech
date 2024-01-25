@@ -27,8 +27,10 @@ using namespace std;
 #define NumSys	84
 #define NumConstraint	2
 #define NumThreshold	5
-#define Nnot 10
+#define Nnot 20
 #define Batchsize 50
+#define Theta   1.2
+#define Epsilon 5
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -65,6 +67,7 @@ double dummies[NumThreshold][NumConstraint];
 double q[NumThreshold][NumConstraint];
 double qL[NumThreshold][NumConstraint];
 double qU[NumThreshold][NumConstraint];
+double newq[NumThreshold][NumConstraint];
 double alpha;
 double k;
 double s;
@@ -223,9 +226,13 @@ double configuration(void) {
     // q[4][1] = 680;
     // q[5][1] = 700;
 
-    epsilon[0] = 0.016102;    //theta = 1.5
-    //epsilon[0] = 0.007983;      //theta = 1.2
-    epsilon[1] = 5;
+    if (Theta == 1.5) {
+        epsilon[0] = 0.019636;    //theta = 1.5 of 95% success
+    }
+    else if (Theta == 1.2) {
+        epsilon[0] = 0.008695;    //theta = 1.2 of 95% success
+    }    
+    epsilon[1] = Epsilon;
 
     return 0;
 }
@@ -369,16 +376,19 @@ int main()
                     if (ON[i][j] == 1) {
 
                         for (int d = 0; d < NumThreshold; d++) { 
-
+                            newq[d][j] = 0;
+                            qU[d][j] = q[d][j]*Theta/(q[d][j]*Theta + (1-q[d][j]));
+                            qL[d][j] = q[d][j]/(q[d][j] + (1-q[d][j])*Theta);
+                            newq[d][j] = (qU[d][j] + qL[d][j])/2;    
                             if (ON_l[i][j][d] == 1) {
 
-                                if ((sumY[j] + R[i][j]) / num_obs[i][j] <= q[d][j]) {     // feasible 조건
+                                if ((sumY[j] + R[i][j]) / num_obs[i][j] <= newq[d][j]) {     // feasible 조건
                                     Z[i][j][d] = 1;     // i 시스템의 j 제약의 d번째 threshold에 대해 feasible
                                     ON_l[i][j][d] = 0;  // 해당 threshold를 검사한거로 변경
                                     surviveThreshold[j] -= 1;
                                 }
 
-                                else if ((sumY[j] - R[i][j]) / num_obs[i][j] >= q[d][j]) {   // infeasible 조건
+                                else if ((sumY[j] - R[i][j]) / num_obs[i][j] >= newq[d][j]) {   // infeasible 조건
                                     Z[i][j][d] = 0;     // i 시스템의 j 제약의 d번째 threshold에 대해 infeasible
                                     ON_l[i][j][d] = 0;      // 해당 threshold를 검사한거로 변경
                                     surviveThreshold[j] -= 1;
@@ -398,7 +408,6 @@ int main()
                 if (ON[i][j] == 1) {    //만약 그 시스템에서 그 constraint가 아직 검사가 안됐다면
 
                     for (int d = 0; d < NumThreshold; d++) {    //threshold까지 내려가서 검사
-
                         if (ON_l[i][j][d] == 1) {   //검사 안됐었으면
 
                             if ((sumY[j] + R[i][j]) / num_obs[i][j] <= q[d][j]) {     // feasible 조건
@@ -464,8 +473,13 @@ int main()
             // check whether the decision is correct
             int cd_for_one_threshold = 1;   
             for (int d = 0; d < NumThreshold; d++) {  
-                for (int j = 0; j < NumConstraint; j++) { 
-                    if (system_true_value[i][j] <= q[d][j] - epsilon[j]) {     //tolerance level을 뺀 q보다 mean value가 작다면,
+                //for (int j = 0; j < NumConstraint; j++) { 
+                    int j = 0;
+                    newq[d][j] = 0;
+                    qU[d][j] = q[d][j]*Theta/(q[d][j]*Theta + (1-q[d][j]));
+                    qL[d][j] = q[d][j]/(q[d][j] + (1-q[d][j])*Theta);
+                    newq[d][j] = (qU[d][j] + qL[d][j])/2;
+                    if (system_true_value[i][j] <= newq[d][j] - epsilon[j]) {     //tolerance level을 뺀 q보다 mean value가 작다면,
                         if (Z[i][j][d] == 1) {      // feasible하게 판단했다면,
                             cd_for_one_threshold *= 1;  // correct decision
                         }
@@ -473,7 +487,7 @@ int main()
                             cd_for_one_threshold *= 0;  // incorrect decision
                         }
                     }
-                    else if (system_true_value[i][j] >= q[d][j] + epsilon[j]) {    //tolerance level을 더한 q보다 mean value가 크다면,
+                    else if (system_true_value[i][j] >= newq[d][j] + epsilon[j]) {    //tolerance level을 더한 q보다 mean value가 크다면,
                         if (Z[i][j][d] == 0) {  //만약 infeasible하게 판단했다면, 
                             cd_for_one_threshold *= 1;  //correct decision
                         }
@@ -484,7 +498,33 @@ int main()
                     else {
                         cd_for_one_threshold *= 1;  //Acceptable하니깐 그냥 correct decision이라고 하자.
                     }
-                }
+
+                    j = 1;
+                    if (system_true_value[i][j] <= q[d][j] - epsilon[j]) {     //tolerance level을 뺀 q보다 mean value가 작다면,
+                        if (Z[i][j][d] == 1) {      // feasible하게 판단했다면,
+                            cd_for_one_threshold *= 1;  // correct decision
+                            //printf("s %d cons2 Correct\n", i+1);
+                        }
+                        else {
+                            cd_for_one_threshold *= 0;  // incorrect decision
+                            //printf("s %d cons2 Incorrect\n", i+1);
+                        }
+                    }
+                    else if (system_true_value[i][j] >= q[d][j] + epsilon[j]) {    //tolerance level을 더한 q보다 mean value가 크다면,
+                        if (Z[i][j][d] == 0) {  //만약 infeasible하게 판단했다면, 
+                            cd_for_one_threshold *= 1;  //correct decision
+                            //printf("s %d cons2 Correct\n", i+1);
+                        }
+                        else {
+                            cd_for_one_threshold *= 0;  //incorrect
+                            //printf("s %d cons2 Incorrect\n", i+1);
+                        }
+                    }
+                    else {
+                        cd_for_one_threshold *= 1;  //Acceptable하니깐 그냥 correct decision이라고 하자.
+                            //printf("s %d cons2 Correct\n", i+1);
+                    }
+                //}
             }
 
             if (cd_for_one_threshold == 1) {   

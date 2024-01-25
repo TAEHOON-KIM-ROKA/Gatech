@@ -22,7 +22,7 @@ using namespace std;
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 1000
+#define NumMacro 1
 #define NumSys	77
 #define NumConstraint	1
 #define NumThreshold	4
@@ -280,7 +280,7 @@ double configuration(void) {
     q[0][2] = 0.1;
     q[0][3] = 0.2;
 
-    theta[0] = 1.2;
+    theta[0] = 1.5;
 
 	return 0;
 }
@@ -350,7 +350,7 @@ int main()
               num_obs[i][j] = 0;
               H[i][j] = std::ceil(fsolve());
               //printf("theta: %.10f\n", theta[j]);
-              //printf("H: %.10f\n", H[i][j]);
+              printf("H: %.10f\n", H[i][j]);
             }
         }
 
@@ -465,13 +465,13 @@ int main()
 
    		}
 
-      /* for (int i=0; i<NumSys; i++){
+      for (int i=0; i<NumSys; i++){
         for (int j=0; j<NumConstraint; j++){
           for (int d=0; d<NumThreshold; d++){
             printf("%d\t%d\t%d\t%d\n", i, j, d, Z[i][j][d]);
           }
         }
-      } */
+      }
 
       printf("%.1f\t%.5f\n", total_obs, final_cd);
 

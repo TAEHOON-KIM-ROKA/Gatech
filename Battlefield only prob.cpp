@@ -214,7 +214,7 @@ double configuration(void) {
     // q[4][1] = 680;
     // q[5][1] = 700;
 
-    theta[0] = 1.2;
+    theta[0] = 1.5;
 
     return 0;
 }
@@ -343,8 +343,8 @@ int main()
             }
 
             //dummy generator
+            double rn = MRG32k3a();
             for (int d = 0; d < NumThreshold; d++) {
-                double rn = MRG32k3a();
                 dummies[d][0] = 0;
                 if (rn <= q[d][0]) {
                     dummies[d][0] = 1;
@@ -417,8 +417,8 @@ int main()
                 //printf("obs value 2: %.4f\n", observations[i][1]);
 
                 //dummy generator
+                double rn = MRG32k3a();
                 for (int d = 0; d < NumThreshold; d++) {
-                    double rn = MRG32k3a();
                     dummies[d][0] = 0;
                     if (rn <= q[d][0]) {
                         dummies[d][0] = 1;
