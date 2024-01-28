@@ -33,8 +33,8 @@ double probability[NumConstraint] = {0.15   //probability for 1st constraint
                                    , 0.4    //probability for 2nd constraint
                                    };
 
-double theta[NumConstraint] = {1.2  //theta for 1st constraint
-                             , 1.2  //theta for 2nd constraint
+double theta[NumConstraint] = {3  //theta for 1st constraint
+                             , 3  //theta for 2nd constraint
                              };
 
 double q[NumConstraint][NumThreshold] = {
@@ -162,13 +162,13 @@ double generate_Bernoulli(int numConstraint) {
                 if (MRG32k3a() <= probability[j]) {
                     observations[i][j] = 1;
                 }
-                double prn = MRG32k3a();
-                for (int d = 0; d < NumThreshold; d++) {
-                    dummies[j][d] = 0;
-                    if (prn <= q[j][d]) {
-                        dummies[j][d] = 1;
-                    }
-                }
+                // double prn = MRG32k3a();
+                // for (int d = 0; d < NumThreshold; d++) {
+                //     dummies[j][d] = 0;
+                //     if (prn <= q[j][d]) {
+                //         dummies[j][d] = 1;
+                //     }
+                // }
             }
             return 0;
         }
@@ -211,13 +211,13 @@ double generate_Bernoulli(int numConstraint) {
                     successes[j]++;
                 }
 
-                double prn = MRG32k3a();
-                for (int d = 0; d < NumThreshold; d++) { 
-                    dummies[j][d] = 0;
-                    if (prn <= q[j][d]) {
-                        dummies[j][d] = 1;
-                    }
-                }
+                // double prn = MRG32k3a();
+                // for (int d = 0; d < NumThreshold; d++) { 
+                //     dummies[j][d] = 0;
+                //     if (prn <= q[j][d]) {
+                //         dummies[j][d] = 1;
+                //     }
+                // }
             }
 
             for (int j = 0; j < numConstraint; j++) {
@@ -402,6 +402,16 @@ int main()
                 }
             }
 
+            double prn = MRG32k3a();
+            for (int j = 0; j < NumConstraint; j++){
+                for (int d = 0; d < NumThreshold; d++) { 
+                    dummies[j][d] = 0;
+                    if (prn <= q[j][d]) {
+                        dummies[j][d] = 1;
+                    }
+                }
+            }
+
             //최초 1회 시행
             generate_Bernoulli(NumConstraint);  // obs 하나 만듦 (베르누이 분포에서 평균)
             total_obs += 1;     // constraint와 상관없이 시스템의 총 obs 갯수 모든 const에 대해 같이 증가함.
@@ -462,6 +472,16 @@ int main()
 
                 generate_Bernoulli(NumConstraint);      //만약 위 조건을 만족 안했었다면 obs 하나 더 생성
                 total_obs += 1;     //total obs도 하나 늘리기
+
+                double prn = MRG32k3a();
+                for (int j = 0; j < NumConstraint; j++){
+                    for (int d = 0; d < NumThreshold; d++) { 
+                        dummies[j][d] = 0;
+                        if (prn <= q[j][d]) {
+                            dummies[j][d] = 1;
+                        }
+                    }
+                }
 
                 for (int j = 0; j < NumConstraint; j++) {
                     sumY[j] += observations[i][j];

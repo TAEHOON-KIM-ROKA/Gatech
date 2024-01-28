@@ -13,6 +13,7 @@
 #include <cmath>
 #include <algorithm>
 #include <boost/math/distributions/normal.hpp>
+using namespace std;
 
 // user inputs for N_0, number of macro-rep, number of systems, number of constraints
 // and number of thresholds of all constraint (if constraints have different number
@@ -22,11 +23,24 @@
 #define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	2
-#define NumThreshold	10
-#define probability1 0.85
-#define probability2 0.6
+#define NumThreshold	2
 #define NumBatch    100
-#define Theta   1.5
+#define Correlation     0
+
+double probability[NumConstraint] = {0.15   //probability for 1st constraint
+                                   , 0.4    //probability for 2nd constraint
+                                   };
+
+double theta[NumConstraint] = {1.2  //theta for 1st constraint
+                             , 1.2  //theta for 2nd constraint
+                             };
+
+double q[NumConstraint][NumThreshold] = {
+                                        {0.14, 0.16}   //thresholds for 1st constraint
+                                        ,{0.35, 0.45}   //thresholds for 2nd constraint
+                                        }; 
+
+double numthreshold[NumConstraint] = {2, 2};
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -59,10 +73,9 @@ double chol_matrix[3][NumConstraint][NumConstraint];
 int system_info[NumSys];
 
 double observations[NumSys][NumConstraint];
-double q[NumThreshold][NumConstraint];
-double qU[NumThreshold][NumConstraint];
-double qL[NumThreshold][NumConstraint];
-double newq[NumThreshold][NumConstraint];
+double qU[NumConstraint][NumThreshold];
+double qL[NumConstraint][NumThreshold];
+double newq[NumConstraint][NumThreshold];
 double epsilon[NumConstraint];
 int ON[NumSys][NumConstraint];
 int ON_l[NumSys][NumConstraint][NumThreshold];
@@ -82,18 +95,28 @@ int main()
     correct_decision = 0;
     overall_obs = 0;
 
-    // 1 threshold. 95%
-    //double alpha = 0.05;
-    // >= 2 threshold
-    double alpha = 0.025;
+    double alpha[NumConstraint];
+
+    for(int j = 0; j < NumConstraint; j++ ){
+        if (NumThreshold < 2) alpha[j] = 0.05;
+        else if (NumThreshold >=2) alpha[j] = 0.025;
+    }
 
     double k = NumSys;
     double s = NumConstraint;
+
+    double beta[NumConstraint];
+    for(int j = 0; j < NumConstraint; j++ ){
+        //if no CRN
+        beta[j] = (1-pow(1-alpha[j], 1/k)) / (s);   
+
+        //if use CRN
+        //beta[j] = (alpha) / (k * s);
+    }
+
     double n0 = Nnot;
-    double beta[NumSys];
     double eta[NumConstraint];
 
-    beta[0] = (1 - pow(1 - alpha, 1 / k)) / s;
     printf("beta: %.10f\n", beta[0]);
     for (int j = 0; j < NumConstraint; j++) {
         eta[j] = (pow(2 * beta[0], -1 * (2 / (n0 - 1))) - 1) / 2;
@@ -183,19 +206,19 @@ int main()
                     if (ON[i][j] == 1) {    //만약 그 시스템에서 그 constraint가 아직 검사가 안됐다면
 
                         for (int d = 0; d < NumThreshold; d++) {    //threshold까지 내려가서 검사
-                            newq[d][j] = 0;
-                            qU[d][j] = q[d][j]*Theta/(q[d][j]*Theta + (1-q[d][j]));
-                            qL[d][j] = q[d][j]/(q[d][j] + (1-q[d][j])*Theta);
-                            newq[d][j] = (qU[d][j] + qL[d][j])/2;
+                            newq[j][d] = 0;
+                            qU[j][d] = q[j][d]*theta[j]/(q[j][d]*theta[j] + (1-q[j][d]));
+                            qL[j][d] = q[j][d]/(q[j][d] + (1-q[j][d])*theta[j]);
+                            newq[j][d] = (qU[j][d] + qL[j][d])/2;
                             if (ON_l[i][j][d] == 1) {   //검사 안됐었으면
 
-                                if ((sumY[j] + R[i][j]) / num_obs[i][j] <= newq[d][j]) {     // feasible 조건
+                                if ((sumY[j] + R[i][j]) / num_obs[i][j] <= newq[j][d]) {     // feasible 조건
                                     Z[i][j][d] = 1;     // i 시스템의 j 제약의 d번째 threshold에 대해 feasible
                                     ON_l[i][j][d] = 0;  // 해당 threshold를 검사한거로 변경
                                     surviveThreshold[j] -= 1;
                                 }
 
-                                else if ((sumY[j] - R[i][j]) / num_obs[i][j] >= newq[d][j]) {   // infeasible 조건
+                                else if ((sumY[j] - R[i][j]) / num_obs[i][j] >= newq[j][d]) {   // infeasible 조건
                                     Z[i][j][d] = 0;     // i 시스템의 j 제약의 d번째 threshold에 대해 infeasible
                                     ON_l[i][j][d] = 0;      // 해당 threshold를 검사한거로 변경
                                     surviveThreshold[j] -= 1;
@@ -231,12 +254,12 @@ int main()
             int cd_for_one_threshold = 1;   // 지금 system for문 내부임
             for (int d = 0; d < NumThreshold; d++) {    //threshold에 대해서 검사
                 for (int j = 0; j < NumConstraint; j++) {   //constraint에 대해서 검사
-                    newq[d][j] = 0;
-                    qU[d][j] = q[d][j]*Theta/(q[d][j]*Theta + (1-q[d][j]));
-                    qL[d][j] = q[d][j]/(q[d][j] + (1-q[d][j])*Theta);
-                    newq[d][j] = (qU[d][j] + qL[d][j])/2;
+                    newq[j][d] = 0;
+                    qU[j][d] = q[j][d]*theta[j]/(q[j][d]*theta[j] + (1-q[j][d]));
+                    qL[j][d] = q[j][d]/(q[j][d] + (1-q[j][d])*theta[j]);
+                    newq[j][d] = (qU[j][d] + qL[j][d])/2;
                     //mean_value[i][j] = sumY[j] / total_obs;
-                    if (mean_value[i][j] <= newq[d][j] - epsilon[j]) {     //tolerance level을 뺀 q보다 mean value가 작다면,
+                    if (mean_value[i][j] <= newq[j][d] - epsilon[j]) {     //tolerance level을 뺀 q보다 mean value가 작다면,
                         if (Z[i][j][d] == 1) {      // feasible하게 판단했다면,
                             cd_for_one_threshold *= 1;  // correct decision
                         }
@@ -244,7 +267,7 @@ int main()
                             cd_for_one_threshold *= 0;  // incorrect decision
                         }
                     }
-                    else if (mean_value[i][j] >= newq[d][j] + epsilon[j]) {    //tolerance level을 더한 q보다 mean value가 크다면,
+                    else if (mean_value[i][j] >= newq[j][d] + epsilon[j]) {    //tolerance level을 더한 q보다 mean value가 크다면,
                         if (Z[i][j][d] == 0) {  //만약 infeasible하게 판단했다면, 
                             cd_for_one_threshold *= 1;  //correct decision
                         }
@@ -321,7 +344,10 @@ int read_chol_matrix() {
     char ch;
 
     // change the input file depending on the correlation between constraints
-    std::ifstream myfile("cholMatrix_rho-0.5.txt");
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(1) << Correlation;  // 소수점 이하 한 자리까지
+    std::string fileName = "cholMatrix_rho" + ss.str() + ".txt";
+    std::ifstream myfile(fileName);
     if (myfile.is_open()) {
         int case_counter = 0;
         int pair_counter = 0;
@@ -355,8 +381,9 @@ double generate_Bernoulli(int numConstraint, int case_index) {
 
     numBatches[0] = NumBatch;
     //numBatches[1] = 10;
-    p[0] = probability1;
-    p[1] = probability2;
+    for (int j = 0; j < numConstraint; j++) {
+        p[j] = probability[j];
+    }
     //vari[0] = p[0] * (1 - p[0]) / numBatches[0];
     //vari[1] = p[1] * (1 - p[1]) / numBatches[0];
 
@@ -441,8 +468,7 @@ double configuration(void) {
 
     for (int i = 0; i < NumSys; i++) {
         for (int j = 0; j < NumConstraint; j++) {
-            mean_value[i][0] = probability1;
-            mean_value[i][1] = probability2;
+            mean_value[i][j] = probability[j];
             ON[i][j] = 1;
             for (int d = 0; d < NumThreshold; d++) {
                 ON_l[i][j][d] = 1;
@@ -456,10 +482,11 @@ double configuration(void) {
     //     epsilon[1] = 0.0402;
     // }
 
-
-    double maxthreshold[NumConstraint];
-    maxthreshold[0] = 0.95;
-    maxthreshold[1] = 0.95;
+    double minthreshold[NumConstraint];
+    for (int j = 0; j < NumConstraint; j++){
+        minthreshold[j] = *std::min_element(q[j], q[j] + NumThreshold);
+        printf("minthreshold: %.4f\n", minthreshold[j]);
+    }
 
     // two constraints and two thresholds
     // q[0][0] = 0.84;
@@ -468,36 +495,33 @@ double configuration(void) {
     // q[1][1] = 0.65;
 
     // 10 constraints and two thresholds
-    q[0][0] = 0.5;
-    q[1][0] = 0.55;
-    q[2][0] = 0.6;
-    q[3][0] = 0.65;
-    q[4][0] = 0.7;
-    q[5][0] = 0.75;
-    q[6][0] = 0.8;
-    q[7][0] = 0.85;
-    q[8][0] = 0.9;
-    q[9][0] = 0.95;
-    q[0][1] = 0.5;
-    q[1][1] = 0.55;
-    q[2][1] = 0.6;
-    q[3][1] = 0.65;
-    q[4][1] = 0.7;
-    q[5][1] = 0.75;
-    q[6][1] = 0.8;
-    q[7][1] = 0.85;
-    q[8][1] = 0.9;
-    q[9][1] = 0.95;
+    // q[0][0] = 0.5;
+    // q[1][0] = 0.55;
+    // q[2][0] = 0.6;
+    // q[3][0] = 0.65;
+    // q[4][0] = 0.7;
+    // q[5][0] = 0.75;
+    // q[6][0] = 0.8;
+    // q[7][0] = 0.85;
+    // q[8][0] = 0.9;
+    // q[9][0] = 0.95;
+    // q[0][1] = 0.5;
+    // q[1][1] = 0.55;
+    // q[2][1] = 0.6;
+    // q[3][1] = 0.65;
+    // q[4][1] = 0.7;
+    // q[5][1] = 0.75;
+    // q[6][1] = 0.8;
+    // q[7][1] = 0.85;
+    // q[8][1] = 0.9;
+    // q[9][1] = 0.95;
 
     double theta[NumConstraint];
     double UB, LB;
 
-    theta[0] = Theta;
-    theta[1] = Theta;
-
     for (int j = 0; j < NumConstraint; j++) {
-        UB = maxthreshold[j]*theta[j]/(maxthreshold[j]*theta[j] + (1-maxthreshold[j]));
-        LB = maxthreshold[j]/(maxthreshold[j] + (1-maxthreshold[j])*theta[j]);
+        UB = minthreshold[j]*theta[j]/(minthreshold[j]*theta[j] + (1-minthreshold[j]));
+        LB = minthreshold[j]/(minthreshold[j] + (1-minthreshold[j])*theta[j]);
         epsilon[j] = (UB-LB)/2;
         //printf("epsilon: %.4f\n", epsilon[j]);
     }

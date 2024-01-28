@@ -231,14 +231,14 @@ double generate_one_obs(int system_index, int demand_index) {
       single_obs[0] = 1;
     }
 
-    double prn = MRG32k3a();
-    for (int d = 0; d < NumThreshold; d++) {
-      //double rn = MRG32k3a();
-      dummies[j][d] = 0;
-      if (prn <= q[j][d]) {
-        dummies[j][d] = 1;
-      }
-    }
+    // double prn = MRG32k3a();
+    // for (int d = 0; d < NumThreshold; d++) {
+    //   //double rn = MRG32k3a();
+    //   dummies[j][d] = 0;
+    //   if (prn <= q[j][d]) {
+    //     dummies[j][d] = 1;
+    //   }
+    // }
   }
 
 
@@ -332,28 +332,6 @@ int main()
     outfile = NULL;
     outfile = fopen("feasibiliy_revision2.out","a");
 
-    double alpha;
-
-    if (NumThreshold < 2) alpha = 0.05;
-    else if (NumThreshold >=2) alpha = 0.025;
-
-    double k = NumSys;
-    double s = NumConstraint;
-
-    double beta[NumConstraint];
-    for(int j = 0; j < NumConstraint; j++ ){
-        //if no CRN
-        beta[j] = (1-pow(1-alpha, 1/k)) / (s);   
-
-        //if use CRN
-        //beta[j] = (alpha) / (k * s);
-    }
-
-    for(int j = 0; j < NumConstraint; j++){
-        H[j] = (log ((1/beta[j]) - 1))/(log (theta[j]));
-        H[j] = std::ceil(H[j]);
-        printf("H: %.1f\n", H[j]);
-    }
     //double eta[NumConstraint];
     //eta[0] = 0.6615;
     //eta[1] = 0.6615;
@@ -367,6 +345,30 @@ int main()
         double num_obs[NumSys][NumConstraint];
         double R[NumSys][NumConstraint];
         double Sil2[NumSys][NumConstraint];
+
+        double alpha;
+
+        if (NumThreshold < 2) alpha = 0.05;
+        else if (NumThreshold >=2) alpha = 0.025;
+
+        double k = NumSys;
+        double s = NumConstraint;
+
+        double beta[NumConstraint];
+        for(int j = 0; j < NumConstraint; j++ ){
+            //if no CRN
+            beta[j] = (1-pow(1-alpha, 1/k)) / (s);   
+
+            //if use CRN
+            //beta[j] = (alpha) / (k * s);
+        }
+
+        for(int j = 0; j < NumConstraint; j++){
+            H[j] = (log ((1/beta[j]) - 1))/(log (theta[j]));
+            H[j] = std::ceil(H[j]);
+            printf("H: %.1f\n", H[j]);
+        }
+
 
    		for (int i=0; i<NumSys; i++) {
 
@@ -387,6 +389,17 @@ int main()
         generate_one_obs(i, demand_index);
         demand_index += 30;
         total_obs += 1;
+
+        double prn = MRG32k3a();
+        for (int j = 0; j < NumConstraint; j++) {
+          for (int d = 0; d < NumThreshold; d++) {
+            //double rn = MRG32k3a();
+            dummies[j][d] = 0;
+            if (prn <= q[j][d]) {
+              dummies[j][d] = 1;
+            }
+          }
+        }
 
         for (int j = 0; j < NumConstraint; j++) {
                 sumY[j] += single_obs[j];
@@ -439,6 +452,17 @@ int main()
                 generate_one_obs(i, demand_index);
                 demand_index += 30;
                 total_obs += 1;
+
+        double prn = MRG32k3a();
+        for (int j = 0; j < NumConstraint; j++) {
+          for (int d = 0; d < NumThreshold; d++) {
+            //double rn = MRG32k3a();
+            dummies[j][d] = 0;
+            if (prn <= q[j][d]) {
+              dummies[j][d] = 1;
+            }
+          }
+        }
 
           for (int j = 0; j < NumConstraint; j++) {
                     sumY[j] += single_obs[j];
