@@ -24,11 +24,11 @@ using namespace std;
 #define NumSys	1
 #define NumConstraint	2
 #define NumThreshold	2
-#define NumBatch    100
+#define NumBatch    32
 #define Correlation     0
 
 double probability[NumConstraint] = {0.15   //probability for 1st constraint
-                                   , 0.4    //probability for 2nd constraint
+                                   , 0.35    //probability for 2nd constraint
                                    };
 
 double theta[NumConstraint] = {1.2  //theta for 1st constraint
@@ -36,11 +36,13 @@ double theta[NumConstraint] = {1.2  //theta for 1st constraint
                              };
 
 double q[NumConstraint][NumThreshold] = {
-                                        {0.14, 0.16}   //thresholds for 1st constraint
-                                        ,{0.35, 0.45}   //thresholds for 2nd constraint
+                                        {0.16, 0.14}   //thresholds for 1st constraint
+                                        ,{0.3, 0.4}   //thresholds for 2nd constraint
                                         }; 
 
-double numthreshold[NumConstraint] = {2, 2};
+double numthreshold[NumConstraint] = {2
+                                        , 2
+                                        };
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -119,7 +121,7 @@ int main()
 
     printf("beta: %.10f\n", beta[0]);
     for (int j = 0; j < NumConstraint; j++) {
-        eta[j] = (pow(2 * beta[0], -1 * (2 / (n0 - 1))) - 1) / 2;
+        eta[j] = (pow(2 * beta[j], -1 * (2 / (n0 - 1))) - 1) / 2;
         printf("eta: %.10f\n", eta[j]);
     }
 
@@ -429,11 +431,11 @@ double generate_Bernoulli(int numConstraint, int case_index) {
         std::vector<int> successes(numConstraint);
         std::vector<double> x_value(numConstraint);
 
-        successes[0] = 0;
-        successes[1] = 0;
-        boost::math::normal_distribution<> standard_normal;
-        x_value[0] = boost::math::quantile(standard_normal, p[0]);
-        x_value[1] = boost::math::quantile(standard_normal, p[1]);
+        for (int j = 0; j < numConstraint; j++) {
+            successes[j] = 0;
+            boost::math::normal_distribution<> standard_normal;
+            x_value[j] = boost::math::quantile(standard_normal, p[j]);
+        }
 
         for (int k = 0; k < NumBatch; k++) {
             // Generate independent standard normal random variables
@@ -485,7 +487,7 @@ double configuration(void) {
     double minthreshold[NumConstraint];
     for (int j = 0; j < NumConstraint; j++){
         minthreshold[j] = *std::min_element(q[j], q[j] + NumThreshold);
-        printf("minthreshold: %.4f\n", minthreshold[j]);
+        //printf("minthreshold: %.4f\n", minthreshold[j]);
     }
 
     // two constraints and two thresholds
@@ -516,7 +518,6 @@ double configuration(void) {
     // q[8][1] = 0.9;
     // q[9][1] = 0.95;
 
-    double theta[NumConstraint];
     double UB, LB;
 
     for (int j = 0; j < NumConstraint; j++) {

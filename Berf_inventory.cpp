@@ -22,7 +22,7 @@ using namespace std;
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 100
+#define NumMacro 1000
 #define NumSys	77
 #define NumConstraint	1
 #define NumThreshold	4

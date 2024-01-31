@@ -26,8 +26,8 @@ using namespace std;
 #define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	2
-#define NumThreshold	2
-#define Correlation     0
+#define NumThreshold	10
+#define Correlation     0.5
 
 double probability[NumConstraint] = {0.15   //probability for 1st constraint
                                    , 0.4    //probability for 2nd constraint
@@ -38,9 +38,22 @@ double theta[NumConstraint] = {1.2  //theta for 1st constraint
                              };
 
 double q[NumConstraint][NumThreshold] = {
-                                        {0.14, 0.16}   //thresholds for 1st constraint
-                                        ,{0.35, 0.45}   //thresholds for 2nd constraint
-                                        }; 
+                                        // {0.14}  //threshold for 1st constraint
+
+                                        // {0.14, 0.16}   //thresholds for 1st constraint
+                                        // ,{0.35, 0.45}   //thresholds for 2nd constraint
+
+                                        // {0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 
+                                        //  0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25}   //thresholds for 1st constraint
+
+                                        {0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5}   //thresholds for 1st constraint
+                                        ,{0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5}   //thresholds for 2nd constraint
+
+                                        // {0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 
+                                        //  0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5}   //thresholds for 1st constraint
+                                        // ,{0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 
+                                        //  0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5}   //thresholds for 2nd constraint
+                                        };
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -123,7 +136,12 @@ int read_chol_matrix() {
     //double Correlation = 0.3
     //std::ifstream myfile("cholMatrix_rho" + to_string(Correlation) + ".txt");
     std::ostringstream ss;
-    ss << std::fixed << std::setprecision(1) << Correlation;  // 소수점 이하 한 자리까지
+    if (Correlation == 0.25 | Correlation == -0.25){
+        ss << std::fixed << std::setprecision(2) << Correlation;  // 소수점 이하 한 자리까지
+    }
+    else {
+        ss << std::fixed << std::setprecision(1) << Correlation;
+    }
     std::string fileName = "cholMatrix_rho" + ss.str() + ".txt";
     std::ifstream myfile(fileName);
     if (myfile.is_open()) {
@@ -258,6 +276,28 @@ float correlationCoefficient(std::vector<double> X, std::vector<double> Y, int n
     return corr;
 }
 
+double calculateMean(const std::vector<double>& data) {
+    double sum = 0.0;
+    for (double num : data) {
+        sum += num;
+    }
+    return sum / data.size();
+}
+
+double calculateStdDev(const std::vector<double>& data) {
+    double mean = calculateMean(data);
+    double sum = 0.0;
+    for (double num : data) {
+        sum += std::pow(num - mean, 2);
+    }
+    return std::sqrt(sum / data.size() - 1);
+}
+
+double calculateStandardError(const std::vector<double>& data) {
+    double stdDev = calculateStdDev(data);
+    return stdDev / std::sqrt(NumMacro);
+}
+
 double configuration(void) {
 
     for (int i = 0; i < NumSys; i++) {
@@ -352,6 +392,8 @@ int main()
     correct_decision = 0;
     overall_obs = 0;
     overall_corr = 0;
+
+    std::vector<double> TOTAL_OBS;
 
     double alpha;
 
@@ -527,11 +569,17 @@ int main()
         }
 
         overall_obs += total_obs;   //각 iter마다 했던 obs 갯수를 다 더함
+        TOTAL_OBS.push_back(total_obs);
 
     }
 
-    printf("Overall: %.10f\n", correct_decision / NumMacro);
-    printf("Overall: %.4f\n", overall_obs / NumMacro);
+    double standardError = calculateStandardError(TOTAL_OBS);
+    double pcd = correct_decision / NumMacro;
+
+    printf("Overall PCD: %.4f\n", correct_decision / NumMacro);
+    printf("se of PCD: %.4f\n", std::sqrt((pcd*(1-pcd))/(NumMacro-1)));
+    printf("Overall OBS: %.4f\n", (overall_obs) / NumMacro);
+    printf("se of OBS: %.4f\n", standardError);
     printf("Overall correlation: %.4f\n", overall_corr / NumMacro);
 
     return 0;
