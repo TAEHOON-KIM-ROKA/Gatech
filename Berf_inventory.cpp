@@ -13,16 +13,16 @@
 #include <cmath>
 #include <random>
 #include <list>
-#include <boost/math/tools/roots.hpp>
-#include <boost/random.hpp>
-#include <boost/math/distributions/normal.hpp>
+// #include <boost/math/tools/roots.hpp>
+// #include <boost/random.hpp>
+// #include <boost/math/distributions/normal.hpp>
 using namespace std;
 
 // user inputs for N_0, number of macro-rep, number of systems, number of constraints
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 1000
+#define NumMacro 10000
 #define NumSys	77
 #define NumConstraint	1
 #define NumThreshold	4
@@ -281,8 +281,6 @@ double configuration(void) {
     q[0][2] = 0.1;
     q[0][3] = 0.2;
 
-    theta[0] = Theta;
-
 	return 0;
 }
 
@@ -330,7 +328,7 @@ int main()
     determine_true_feasibility();
 
     outfile = NULL;
-    outfile = fopen("feasibiliy_revision2.out","a");
+    outfile = fopen("1.2 with 10K reps","a");
 
     double alpha;
 
@@ -343,8 +341,8 @@ int main()
     double beta[NumConstraint];
     for(int j = 0; j < NumConstraint; j++ ){
         //if no CRN
-        beta[j] = (1-pow(1-alpha, 1/k)) / (s);   
-
+        beta[j] = (1-pow(1-alpha, 1/k)) / (s);
+        theta[j] = Theta;
         //if use CRN
         //beta[j] = (alpha) / (k * s);
     }

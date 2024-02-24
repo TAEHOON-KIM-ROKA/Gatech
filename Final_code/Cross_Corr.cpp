@@ -1,4 +1,7 @@
 #include <iostream>
+#include <vector>
+#include <cmath>
+#include <utility> // for std::pair
 #include <string>
 #include <fstream>
 #include <iomanip>
@@ -7,27 +10,24 @@
 #include <float.h>
 #include <assert.h>
 #include <time.h>
-#include <vector>
 #include <math.h>
 #include <fstream>
-#include <cmath>
 #include <random>
 #include <list>
-#include <boost/math/tools/roots.hpp>
-#include <boost/random.hpp>
-#include <boost/math/distributions/normal.hpp>
+
 using namespace std;
 
 // user inputs for N_0, number of macro-rep, number of systems, number of constraints
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 1000
+#define NumMacro 10000
 #define NumSys	77
 #define NumConstraint	1
 #define NumThreshold	4
 #define Num_s 20
 #define Num_S 20
+#define Theta 1.2
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -65,7 +65,7 @@ int read_system_true_value(void);
 int determine_true_feasibility(void);
 
 double q[NumConstraint][NumThreshold];
-double H[NumSys][NumConstraint];
+double H[NumConstraint];
 double dummies[NumConstraint][NumThreshold];
 double qL[NumConstraint][NumThreshold];
 double qU[NumConstraint][NumThreshold];
@@ -79,8 +79,7 @@ int system_value[NumSys][2];
 double system_true_value[NumSys][1] = {0};
 int true_feasibility[NumSys][NumConstraint][NumThreshold];
 double single_obs[NumConstraint];
-double demand_list[2000000];
-double prn_list[2000000];
+double demand_list[15000000];
 
 double demand_mean = 25;
 double order_cost = 3;
@@ -188,16 +187,8 @@ int write_up(void) {
 
 int generate_demand() {
 
-  for (int i=0; i<2000000; i++) {
+  for (int i=0; i<15000000; i++) {
     demand_list[i] = poisson(demand_mean);
-  }
-  return 0;
-}
-
-int generate_prn() {
-
-  for (int i=0; i<2000000; i++) {
-    prn_list[i] = MRG32k3a();
   }
   return 0;
 }
@@ -239,14 +230,14 @@ double generate_one_obs(int system_index, int demand_index) {
       single_obs[0] = 1;
     }
 
-    // double rn = MRG32k3a();
-    // for (int d = 0; d < NumThreshold; d++) {
-    //   //double rn = MRG32k3a();
-    //   dummies[j][d] = 0;
-    //   if (rn <= q[j][d]) {
-    //     dummies[j][d] = 1;
-    //   }
-    // }
+    double prn = MRG32k3a();
+    for (int d = 0; d < NumThreshold; d++) {
+      //double rn = MRG32k3a();
+      dummies[j][d] = 0;
+      if (prn <= q[j][d]) {
+        dummies[j][d] = 1;
+      }
+    }
   }
 
 
@@ -289,8 +280,6 @@ double configuration(void) {
     q[0][2] = 0.1;
     q[0][3] = 0.2;
 
-    theta[0] = 1.5;
-
 	return 0;
 }
 
@@ -306,212 +295,111 @@ double minfn(double x, double y)
 	else return y;
 }
 
-struct f {
-    //int idx;
-    //f(int index) : idx(index) {}
-    // 1 threshold. 95%
-    double alpha = 0.05;
-    // >= 2 threshold
-    double k = NumSys;
-    double s = NumConstraint;
-    double beta = (alpha/k) / (2 * s);
 
-    double operator()(double ell) {
-        return (1 / (1 + std::pow(theta[0], ell)) - beta);
+// 상관계수를 계산하는 함수
+double calculateCorrelation(const vector<double>& x, const vector<double>& y) {
+    size_t n = x.size();
+    double sumX = accumulate(x.begin(), x.end(), 0.0);
+    double sumY = accumulate(y.begin(), y.end(), 0.0);
+    double meanX = sumX / n;
+    double meanY = sumY / n;
+    
+    double sumXY = 0, sumX2 = 0, sumY2 = 0;
+    for (size_t i = 0; i < n; ++i) {
+        sumXY += (x[i] - meanX) * (y[i] - meanY);
+        sumX2 += pow(x[i] - meanX, 2);
+        sumY2 += pow(y[i] - meanY, 2);
     }
-};
+    
+    return sumXY / (sqrt(sumX2) * sqrt(sumY2));
+}
 
-double fsolve() {
-    const boost::uintmax_t maxit = 1000;
-    boost::uintmax_t it = maxit;
-    const double guess = 1.0;
-    const double min = 0.0;
-    const double max = 2.0;
-    boost::math::tools::eps_tolerance<double> tol((std::numeric_limits<double>::digits * 3) / 2);
-    std::pair<double, double> r = boost::math::tools::bracket_and_solve_root(f(), guess, 2.0, false, tol, it);
-    return r.first + (r.second - r.first) / 2;
-};
-
-int main()
-{
-    read_system_true_value();
-    determine_true_feasibility();
-
-    outfile = NULL;
-    outfile = fopen("BeRF_inventory_Ur_1.2.out","a");
-
-    //double eta[NumConstraint];
-    //eta[0] = 0.6615;
-    //eta[1] = 0.6615;
-
-    for (int l=0; l<NumMacro; l++) {
-
-        configuration();
-        generate_demand();
-        generate_prn();
-        total_obs = 0;
-        final_cd = 1;
-
-        double num_obs[NumSys][NumConstraint];
-        double R[NumSys][NumConstraint];
-        double Sil2[NumSys][NumConstraint];
-
-        for (int i = 0; i < NumSys; i++) {
-            for (int j = 0; j < NumConstraint; j++) {
-              num_obs[i][j] = 0;
-              H[i][j] = std::ceil(fsolve());
-              //printf("theta: %.10f\n", theta[j]);
-              // printf("H: %.10f\n", H[i][j]);
-            }
-        }
-
-   		for (int i=0; i<NumSys; i++) {
-
+void generateSystemData(vector<vector<double>>& total_costs, vector<vector<double>>& single_obs_values, int numSystems, int observationsPerSystem) {
+    // total_costs와 single_obs_values 벡터를 초기화합니다.
+    total_costs.resize(numSystems, vector<double>(observationsPerSystem, 0));
+    single_obs_values.resize(numSystems, vector<double>(observationsPerSystem, 0));
+    
+    // 각 시스템별로 total_cost와 single_obs 값을 생성합니다.
+    for (int systemIndex = 0; systemIndex < numSystems; ++systemIndex) {
         int demand_index = 0;
-        int prn_index = 0;
+        for (int obsIndex = 0; obsIndex < observationsPerSystem; ++obsIndex) {
+            // 여기에서 각 시스템별로 total_cost와 single_obs 값을 생성하는 로직을 구현합니다.
+            // 예시: total_costs[systemIndex][obsIndex] = (생성 로직);
+            // 예시: single_obs_values[systemIndex][obsIndex] = (생성 로직);
+            // 주어진 코드의 `generate_one_obs` 함수 로직 참조
+            double total_cost =0;
+            double total_fail_prob = 0;
+            double LittleS = system_value[systemIndex][0];
+            int BigS = system_value[systemIndex][1];
+            double current_level= BigS, next_level=0, Demand;
+            double Cost;
 
-   			// generate initial samples
-   			double sumY[NumConstraint];
-   			//double sum_squareY[NumConstraint];
-        double sumI[NumConstraint][NumThreshold];
+            for(int i=0; i < 12; i++){
+                Cost = 0;
+                // Demand = poisson(demand_mean);
+                Demand = demand_list[demand_index+i];
 
-   			for (int j=0; j<NumConstraint; j++) {
-   			    sumY[j] = 0;
-            for (int d = 0; d < NumThreshold; d++) {
-                sumI[j][d] = 0;
+                if( current_level < LittleS) {
+                next_level = BigS;
+                Cost = fixed_order_cost + order_cost * (BigS - current_level);
+                }
+                else next_level = current_level;
+
+                if( next_level - Demand >= 0) Cost += holding_cost * (next_level - Demand);
+                else  {
+                Cost += penalty_cost * (Demand - next_level);
+                total_fail_prob++;
+                }
+
+                current_level = next_level - Demand;
+                total_cost += Cost;
             }
-   			}
 
-        generate_one_obs(i, demand_index);
-        demand_index += 12;
-        total_obs += 1;
-        double PRN = prn_list[prn_index];
-        prn_index += 1;
-        for(int j = 0; j < NumConstraint; j++) {
-          for (int d = 0; d < NumThreshold; d++) {
-            //double rn = MRG32k3a();
-            dummies[j][d] = 0;
-            if (PRN <= q[j][d]) {
-              dummies[j][d] = 1;
-            }
-          }
+            // for (int j = 0; j < 1; j++) {
+            //     single_obs[0] = 0;
+            //     //printf("total cost: %.10f\n", total_cost);
+            //     if (total_cost > 1400) {
+            //     single_obs[0] = 1;
+            //     }
+            // }
+            // printf("System %.1d total cost: %.1f\n", systemIndex, total_cost);
+            total_costs[systemIndex][obsIndex] = total_cost;
+            // single_obs_values[systemIndex][obsIndex] = single_obs[0];
+            demand_index += 12;
         }
-
-        for (int j = 0; j < NumConstraint; j++) {
-                sumY[j] += single_obs[j];
-                for (int d = 0; d < NumThreshold; d++) {
-                    sumI[j][d] += dummies[j][d];
-                }
-                num_obs[i][j] += 1;     //각 constraint마다 존재하는 obs의 갯수
-            }
-
-            int surviveConstraint = NumConstraint;
-            int surviveThreshold[NumConstraint];
-            for (int j=0; j<NumConstraint; j++) surviveThreshold[j] = NumThreshold;
-
-   			while (surviveConstraint != 0) {
-
-   				for (int j=0; j<NumConstraint; j++) {
-
-   					if (ON[i][j] == 1) {
-
-   						for (int d=0; d<NumThreshold; d++) {
-
-   							if (ON_l[i][j][d] == 1) {
-
-                                if (sumY[j] - sumI[j][d] <= -H[i][j]) {
-   									Z[i][j][d] = 1;
-   									ON_l[i][j][d] = 0;
-   									surviveThreshold[j] -= 1;
-                                }
-
-                                else if (sumY[j] - sumI[j][d] >= H[i][j]) {
-      							    Z[i][j][d] = 0;
-   									ON_l[i][j][d] = 0;
-   				                    surviveThreshold[j] -= 1;
-   								}
-   							}
-
-   					    }
-
-                        if (surviveThreshold[j] == 0) {
-                            ON[i][j] = 0;
-                            surviveConstraint -= 1;
-                        }
-
-   					}
-
-   				}
-
-   				if (surviveConstraint == 0) break;
-
-                generate_one_obs(i, demand_index);
-                demand_index += 12;
-                total_obs += 1;
-                double PRN = prn_list[prn_index];
-                prn_index += 1;
-                for(int j = 0; j < NumConstraint; j++) {
-                  for (int d = 0; d < NumThreshold; d++) {
-                    //double rn = MRG32k3a();
-                    dummies[j][d] = 0;
-                    if (PRN <= q[j][d]) {
-                      dummies[j][d] = 1;
-                    }
-                  }
-                }
-
-          for (int j = 0; j < NumConstraint; j++) {
-                    sumY[j] += single_obs[j];
-                    for (int d = 0; d < NumThreshold; d++) {
-                        sumI[j][d] += dummies[j][d];
-                    }
-                    num_obs[i][j] += 1;
-          }
-          //printf("sumY: %.10f\n", sumY[0]);
-          //printf("sumI: %.10f\n", sumI[0][0]);
-   			}
-
-   			// check whether the decision is correct
-   			int cd_for_one_threshold = 1;
-            for (int j=0; j<NumConstraint; j++) {
-              
-                for (int d=0; d<NumThreshold; d++) {
-
-                    if (system_true_value[i][j] <= (q[j][d] / (q[j][d] + (1 - q[j][d]) * theta[j]))) {
-                        if (Z[i][j][d] == 1) cd_for_one_threshold *= 1;
-                        else cd_for_one_threshold *= 0;
-                    } 
-                    else if (system_true_value[i][j] >= (q[j][d] * theta[j] / ((1 - q[j][d]) + q[j][d] * theta[j]))) {
-                        if (Z[i][j][d] == 0) cd_for_one_threshold *= 1;
-                        else cd_for_one_threshold *= 0;
-                    }
-                    else {
-                        cd_for_one_threshold *= 1;
-                    }
-                }
-            }
-
-   			if (cd_for_one_threshold == 1) {
-                final_cd *= 1;
-   			} else {
-                final_cd *= 0;
-            }
-
-   		}
-
-      /* for (int i=0; i<NumSys; i++){
-        for (int j=0; j<NumConstraint; j++){
-          for (int d=0; d<NumThreshold; d++){
-            printf("%d\t%d\t%d\t%d\n", i, j, d, Z[i][j][d]);
-          }
-        }
-      } */
-
-      printf("%.1f\t%.5f\n", total_obs, final_cd);
-
-      write_up();
-
+        printf("System %.1d obs generated completely.\n", systemIndex);
     }
+}
 
-	return 0;
+int main() {
+
+    generate_demand();
+    configuration();
+    const int ObservationsPerSystem = 1000000; // 각 시스템별 관측값의 수
+
+    vector<vector<double>> total_costs;
+    vector<vector<double>> single_obs_values;
+    
+    // 시스템별 데이터 생성
+    generateSystemData(total_costs, single_obs_values, NumSys, ObservationsPerSystem);
+    
+    // 각 시스템 쌍에 대해 total_cost의 상관계수 계산
+    cout << "Correlation of total_costs between systems:" << endl;
+    for (int i = 0; i < NumSys; ++i) {
+        for (int j = i + 1; j < NumSys; ++j) {
+            double correlation = calculateCorrelation(total_costs[i], total_costs[j]);
+            cout << i << " " << j << " " << correlation << endl;
+        }
+    }
+    
+    // 각 시스템 쌍에 대해 single_obs의 상관계수 계산
+    // cout << "\nCorrelation of single_obs between systems:" << endl;
+    // for (int i = 0; i < NumSys; ++i) {
+    //     for (int j = i + 1; j < NumSys; ++j) {
+    //         double correlation = calculateCorrelation(single_obs_values[i], single_obs_values[j]);
+    //         cout << i << " " << j << " " << correlation << endl;
+    //     }
+    // }
+    
+    return 0;
 }

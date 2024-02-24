@@ -17,14 +17,14 @@
 // number of thresholds each constraint later in the code)
 #define alpha 0.05
 #define Nnot	20
-#define NumMacro 1000
+#define NumMacro 9000
 #define NumSys	77
 #define NumConstraint	1
 #define NumThreshold	4
 #define Num_s 20
 #define Num_S 20
 #define NumBatch    100
-#define Theta   1.2
+#define Theta   1.5
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -38,8 +38,8 @@
 
 double MRG32k3a(void);  //Generate R(0,1) by L'ecuyer (1997)
 // choices of seeds for Generate R(0,1) by L'ecuyer (1997)
-double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
-//double  s10 = 43, s11 =54, s12 =65, s20 =43, s21 =54, s22 =65;
+//double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
+double  s10 = 43, s11 =54, s12 =65, s20 =43, s21 =54, s22 =65;
 //double  s10 = 4321111, s11 =1115432, s12 =1116543, s20 =4321111, s21 =1115432, s22 =6543111;
 //double  s10 = 43221, s11 =54332, s12 =65443, s20 =43321, s21 =54532, s22 =61543;
 //double  s10 = 1010, s11 =10, s12 =101, s20 =2001, s21 = 202, s22 = 202;

@@ -26,34 +26,61 @@ using namespace std;
 #define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	1
-#define NumThreshold	21
+#define NumThreshold	2
 #define Correlation     0
 
+double adjusting(double n);
 double probability[NumConstraint] = {0.15   //probability for 1st constraint
                                 //    , 0.4    //probability for 2nd constraint
                                    };
 
-double theta[NumConstraint] = {1.2  //theta for 1st constraint
+double theta[NumConstraint] = {1.5  //theta for 1st constraint
                             //  , 1.2  //theta for 2nd constraint
-                             };
+                            };
+
+double Lower(double x, double y);
+double Upper(double x, double y);
 
 double q[NumConstraint][NumThreshold] = {
-                                        // {0.14}  //threshold for 1st constraint
 
-                                        //  {0.14, 0.16}   //thresholds for 1st constraint
-                                        // ,{0.35, 0.45}   //thresholds for 2nd constraint
+    // 1 constraint 1 threshold case
+    // {Lower(probability[0], theta[0])}
+    // {Upper(probability[0], theta[0])}
+    
+    // 1,2 constraint 2 thresholds case
+     {Lower(probability[0], theta[0]), Upper(probability[0], theta[0])}   //thresholds for 1st constraint
+    // ,{Lower(probability[1], theta[1]), Upper(probability[1], theta[1])}   //thresholds for 2nd constraint
 
-                                        {0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 
-                                         0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25}   //thresholds for 1st constraint
+    // 1 constraint 12 thresholds case
+    // {Lower(probability[0], theta[0]), Upper(probability[0], theta[0]),
+    //  Lower(probability[0], 1.2*theta[0]), Upper(probability[0], 1.2*theta[0]),
+    //  Lower(probability[0], 1.4*theta[0]), Upper(probability[0], 1.4*theta[0]),
+    //  Lower(probability[0], 1.6*theta[0]), Upper(probability[0], 1.6*theta[0]),
+    //  Lower(probability[0], 1.8*theta[0]), Upper(probability[0], 1.8*theta[0]),
+    //  Lower(probability[0], 2*theta[0]), Upper(probability[0], 2*theta[0])}   //thresholds for 1st constraint
 
-                                        // {0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5}   //thresholds for 1st constraint
-                                        // ,{0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5}   //thresholds for 2nd constraint
+    // 2 constriants 4 thresholds case
+    // {Lower(probability[0], theta[0]), Upper(probability[0], theta[0]),
+    //  Lower(probability[0], 1.5*theta[0]), Upper(probability[0], 1.5*theta[0])}   //thresholds for 1st constraint
+    // ,{Lower(probability[1], theta[1]), Upper(probability[1], theta[1]),
+    //  Lower(probability[1], 1.5*theta[1]), Upper(probability[1], 1.5*theta[1])}   //thresholds for 2nd constraint
 
-                                        // {0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 
-                                        //  0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5}   //thresholds for 1st constraint
-                                        // ,{0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 
-                                        //  0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5}   //thresholds for 2nd constraint
-                                        };
+    // 2 constraints 12 thresholds case
+    // {Lower(probability[0], theta[0]), Upper(probability[0], theta[0]),
+    //  Lower(probability[0], 1.2*theta[0]), Upper(probability[0], 1.2*theta[0]),
+    //  Lower(probability[0], 1.4*theta[0]), Upper(probability[0], 1.4*theta[0]),
+    //  Lower(probability[0], 1.6*theta[0]), Upper(probability[0], 1.6*theta[0]),
+    //  Lower(probability[0], 1.8*theta[0]), Upper(probability[0], 1.8*theta[0]),
+    //  Lower(probability[0], 2*theta[0]), Upper(probability[0], 2*theta[0])}   //thresholds for 1st constraint
+    // ,{Lower(probability[1], theta[1]), Upper(probability[1], theta[1]),
+    //  Lower(probability[1], 1.2*theta[1]), Upper(probability[1], 1.2*theta[1]),
+    //  Lower(probability[1], 1.4*theta[1]), Upper(probability[1], 1.4*theta[1]),
+    //  Lower(probability[1], 1.6*theta[1]), Upper(probability[1], 1.6*theta[1]),
+    //  Lower(probability[1], 1.8*theta[1]), Upper(probability[1], 1.8*theta[1]),
+    //  Lower(probability[1], 2*theta[1]), Upper(probability[1], 2*theta[1])}   //thresholds for 1st constraint
+
+    };
+
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -67,10 +94,10 @@ double q[NumConstraint][NumThreshold] = {
 double MRG32k3a(void);  //Generate R(0,1) by L'ecuyer (1997)
 // choices of seeds for Generate R(0,1) by L'ecuyer (1997)
 double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
-//double  s10 = 43, s11 =54, s12 =65, s20 =43, s21 =54, s22 =65;
+// double  s10 = 43, s11 =54, s12 =65, s20 =43, s21 =54, s22 =65;
 //double  s10 = 4321111, s11 =1115432, s12 =1116543, s20 =4321111, s21 =1115432, s22 =6543111;
-//double  s10 = 43221, s11 =54332, s12 =65443, s20 =43321, s21 =54532, s22 =61543;
-//double  s10 = 1010, s11 =10, s12 =101, s20 =2001, s21 = 202, s22 = 202;
+// double  s10 = 43221, s11 =54332, s12 =65443, s20 =43321, s21 =54532, s22 =61543;
+// double  s10 = 1010, s11 =10, s12 =101, s20 =2001, s21 = 202, s22 = 202;
 
 double normal(double rmean, double rvar);
 double configuration(void);
@@ -83,9 +110,9 @@ double mean_value[NumSys][NumConstraint];
 double chol_matrix[3][NumConstraint][NumConstraint];
 int system_info[NumSys];
 
-double observations[NumSys][NumConstraint];
+int observations[NumSys][NumConstraint];
 double H[NumConstraint];
-double dummies[NumConstraint][NumThreshold];
+int dummies[NumConstraint][NumThreshold];
 double qL[NumConstraint][NumThreshold];
 double qU[NumConstraint][NumThreshold];
 double thetas[NumConstraint][NumThreshold];
@@ -133,6 +160,11 @@ double normal(double rmean, double rvar)
 int read_chol_matrix() {
     double c1, c2, c3, c4, c5;
     char ch;
+    for (int i = 0; i < NumConstraint; i++) {
+            for (int j = 0; j < NumThreshold; j++) {
+                std::cout << q[i][j] << std::endl;
+            }
+    }
     //double Correlation = 0.3
     //std::ifstream myfile("cholMatrix_rho" + to_string(Correlation) + ".txt");
     std::ostringstream ss;
@@ -173,7 +205,7 @@ int read_chol_matrix() {
 
 double generate_Bernoulli(int numConstraint) {
 
-    if (NumConstraint < 2) {
+    if (NumConstraint < 1.5) {
         for (int i = 0; i < NumSys; i++) {
             for (int j = 0; j < numConstraint; j++) {
                 observations[i][j] = 0;
@@ -350,6 +382,28 @@ double configuration(void) {
     return 0;
 }
 
+// double adjusting(double n){
+//     double adjusted;
+//     adjusted = round(n*pow(10, 15)) / pow(10, 15);
+//     return adjusted;
+// }
+
+double Lower(double x, double y){
+    // adjusting(x);
+    // adjusting(y);
+    double lower = (x)/(x + (1 - x)*y);
+    // return adjusting(lower);
+    return lower;
+}
+
+double Upper(double x, double y){
+    // adjusting(x);
+    // adjusting(y);
+    double upper = (x*y)/(x*(y-1) + 1);
+    // return adjusting(upper);
+    return upper;
+}
+
 // struct f {
 //     //int idx;
 //     //f(int index) : idx(index) {}
@@ -402,6 +456,8 @@ int main()
     if (NumThreshold < 2) alpha = 0.05;
     else if (NumThreshold >=2) alpha = 0.025;
 
+    printf("alpha: %.3f\n", alpha);
+
     double k = NumSys;
     double s = NumConstraint;
 
@@ -409,16 +465,20 @@ int main()
     for(int j = 0; j < NumConstraint; j++ ){
         //if no CRN
         beta[j] = (1-pow(1-alpha, 1/k)) / (s);   
+        printf("beta %.d: %.3f\n", j, beta[j]);
 
         //if use CRN
         //beta[j] = (alpha) / (k * s);
     }
 
     for(int j = 0; j < NumConstraint; j++){
-        H[j] = (log ((1/beta[j]) - 1))/(log (theta[j]));
-        H[j] = std::ceil(H[j]);
-        printf("H: %.1f\n", H[j]);
+        // H[j] = int(std::ceil((log ((1/beta[j]) - 1))/(log (theta[j]))));
+        H[j] = std::ceil((log ((1/beta[j]) - 1))/(log (theta[j])));
+        //H[j] = std::ceil(H[j]);
+        printf("H: %.18f\n", H[j]);
     }
+    H[0] = 11;
+    // H[1] = 11;
 
     for (int l = 0; l < NumMacro; l++) {    // iteration 시작. 
 
@@ -427,6 +487,7 @@ int main()
         final_cd = 1;       //일단 cd를 1로 시작
         std::vector<double> X;
         std::vector<double> Y;
+        std::vector<double> failed_decisions;
 
         double num_obs[NumSys][NumConstraint];
 
@@ -479,25 +540,25 @@ int main()
                         for (int d = 0; d < NumThreshold; d++) {    //threshold까지 내려가서 검사
 
                             if (ON_l[i][j][d] == 1) {   //검사 안됐었으면
-
-                                if (sumY[j] - sumI[j][d] <= -H[j]) {     // 첫번째 조건
+                                // if ((sumY[j] - sumI[j][d]) <= -H[j] ) {
+                                if ((sumY[j] - sumI[j][d]) + H[j] <= pow(0.1, 15)) {     // 첫번째 조건
                                     Z[i][j][d] = 1;     //
                                     ON_l[i][j][d] = 0;  // 해당 threshold를 검사한거로 변경
                                     // if (surviveThreshold[j] == 1) {
-                                    //     std::cout << q[j][d] << std::endl;
+                                    //     std::cout << q[j][d] << "   " << num_obs[i][j] << std::endl;
+                                    //     //printf("constraint %d , %d th threshold %.2f end with %.0f data \n", j+1, d+1, q[j][d], num_obs[i][j]);
                                     // }
                                     surviveThreshold[j] -= 1;
-                                    //printf("constraint %d , %d th threshold %.2f end with %.0f data \n", j+1, d+1, q[j][d], num_obs[i][j]);
                                 }
-
-                                else if (sumY[j] - sumI[j][d] >= H[j]) {   // 두번째 조건
+                                // else if (sumY[j] - sumI[j][d] >= H[j]) {
+                                else if (sumY[j] - sumI[j][d] - H[j]>= -pow(0.1, 15)) {   // 두번째 조건
                                     Z[i][j][d] = 0;     //
                                     ON_l[i][j][d] = 0;      // 해당 threshold를 검사한거로 변경
                                     // if (surviveThreshold[j] == 1) {
-                                    //     std::cout << q[j][d] << std::endl;
+                                    //     std::cout << q[j][d] << "   " << num_obs[i][j] << std::endl;
+                                    //     //printf("constraint %d , %d th threshold %.2f end with %.0f data \n", j+1, d+1, q[j][d], num_obs[i][j]);
                                     // }
                                     surviveThreshold[j] -= 1;
-                                    //printf("constraint %d , %d th threshold %.2f end with %.0f data \n", j+1, d+1, q[j][d], num_obs[i][j]);
                                 }
                             }   //아무거에도 해당 안됐었으면 그냥 다음으로 넘어가고 obs 하나 더 얻는다 
                         }
@@ -537,21 +598,29 @@ int main()
             int cd_for_one_threshold = 1;   // 지금 system for문 내부임
             for (int d = 0; d < NumThreshold; d++) {    //threshold에 대해서 검사
                 for (int j = 0; j < NumConstraint; j++) {   //constraint에 대해서 검사
-                    //mean_value[i][j] = sumY[j] / total_obs;
-                    if (mean_value[i][j] <= (q[j][d] / (q[j][d] + (1 - q[j][d]) * theta[j]))) {     //tolerance level을 뺀 q보다 mean value가 작다면,
+                    // mean_value[i][j] = sumY[j] / total_obs;
+                    // printf("p : %.18f\n", probability[j] );
+                    // printf("m : %.18f\n", mean_value[i][j] );
+                    // printf("LB: %.18f\n", (q[j][d] / (q[j][d] + (1 - q[j][d]) * theta[j])) );
+                    // printf("UB: %.18f\n", ((q[j][d] * theta[j]) / ((1 - q[j][d]) + q[j][d] * theta[j])) );
+                    //if (adjusting(mean_value[i][j]) <= (adjusting(q[j][d] / (q[j][d] + (1 - q[j][d]) * theta[j])))) {     //tolerance level을 뺀 q보다 mean value가 작다면,
+                    if (mean_value[i][j] - (q[j][d] / (q[j][d] + (1 - q[j][d]) * theta[j])) <= pow(0.1, 15)) {     //tolerance level을 뺀 q보다 mean value가 작다면,
                         if (Z[i][j][d] == 1) {      // feasible하게 판단했다면,
                             cd_for_one_threshold *= 1;  // correct decision
                         }
                         else {
                             cd_for_one_threshold *= 0;  // incorrect decision
+                            failed_decisions.push_back(q[j][d]);
                         }
                     }
-                    else if (mean_value[i][j] >= (q[j][d] * theta[j] / ((1 - q[j][d]) + q[j][d] * theta[j]))) {    //tolerance level을 더한 q보다 mean value가 크다면,
+                    //else if (adjusting(mean_value[i][j]) >= (adjusting((q[j][d] * theta[j]) / ((1 - q[j][d]) + q[j][d] * theta[j])))) {    //tolerance level을 더한 q보다 mean value가 크다면,
+                    else if (mean_value[i][j] - ((q[j][d] * theta[j]) / ((1 - q[j][d]) + q[j][d] * theta[j])) >= -pow(0.1, 15)) {
                         if (Z[i][j][d] == 0) {  //만약 infeasible하게 판단했다면, 
                             cd_for_one_threshold *= 1;  //correct decision
                         }
                         else {
                             cd_for_one_threshold *= 0;  //incorrect
+                            failed_decisions.push_back(q[j][d]);
                         }
                     }
                     else {
@@ -565,6 +634,12 @@ int main()
             }
             else {
                 final_cd *= 0;  //최종 incorrect
+                // int arr_amount;
+                // arr_amount = sizeof(failed_decisions) / sizeof(failed_decisions[0]);
+                // for (int i = 0; i < arr_amount; i++){
+                //     std::cout << failed_decisions[i] << std::endl;
+                // }
+                // std::cout << "-------------------------------" << std::endl;
             }
 
             if (NumConstraint >= 2) {

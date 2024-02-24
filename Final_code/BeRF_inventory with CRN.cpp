@@ -280,7 +280,7 @@ double configuration(void) {
     q[0][2] = 0.1;
     q[0][3] = 0.2;
 
-    theta[0] = 1.2;
+    theta[0] = 1.5;
 
 	return 0;
 }
@@ -351,7 +351,7 @@ int main()
               num_obs[i][j] = 0;
               H[i][j] = std::ceil(fsolve());
               //printf("theta: %.10f\n", theta[j]);
-              //printf("H: %.10f\n", H[i][j]);
+              printf("H: %.10f\n", H[i][j]);
             }
         }
 
