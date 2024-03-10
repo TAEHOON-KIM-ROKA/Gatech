@@ -28,7 +28,7 @@ using namespace std;
 #define NumConstraint	2
 #define NumThreshold	5
 #define Nnot 20
-#define Batchsize 50
+#define Batchsize 32
 #define Theta   1.2
 #define Epsilon 5
 
@@ -45,8 +45,8 @@ using namespace std;
 double MRG32k3a(void);  //Generate R(0,1) by L'ecuyer (1997)
 // choices of seeds for Generate R(0,1) by L'ecuyer (1997)
 double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
-//double  s10 = 43, s11 =54, s12 =65, s20 =43, s21 =54, s22 =65;
-//double  s10 = 4321111, s11 =1115432, s12 =1116543, s20 =4321111, s21 =1115432, s22 =6543111;
+// double  s10 = 43, s11 =54, s12 =65, s20 =43, s21 =54, s22 =65;
+// double  s10 = 4321111, s11 =1115432, s12 =1116543, s20 =4321111, s21 =1115432, s22 =6543111;
 //double  s10 = 43221, s11 =54332, s12 =65443, s20 =43321, s21 =54532, s22 =61543;
 //double  s10 = 1010, s11 =10, s12 =101, s20 =2001, s21 = 202, s22 = 202;
 
@@ -399,7 +399,7 @@ int main()
                         if (surviveThreshold[j] == 0) { 
                             ON[i][j] = 0;
                             surviveConstraint -= 1;
-                            printf("s %d const1 end with %.0f data \n", i+1, num_obs[i][0]*Batchsize);
+                            // printf("s %d const1 end with %.0f data \n", i+1, num_obs[i][0]*Batchsize);
                         }
                     }
                 }
@@ -427,7 +427,7 @@ int main()
                     if (surviveThreshold[j] == 0) {     //더이상 검사안한 threshold가 없으면 해당 constraint도 검사한거로 변경
                         ON[i][j] = 0;
                         surviveConstraint -= 1;
-                        printf("s %d const2 end with %.0f data \n", i+1, num_obs[i][1]);
+                        // printf("s %d const2 end with %.0f data \n", i+1, num_obs[i][1]);
                     }
                 }
 
@@ -435,7 +435,7 @@ int main()
 
                 else if (reader.isEOFReached()) { 
                     
-                    printf("****system %d needs more data.**** \n", i+1);
+                    // printf("****system %d needs more data.**** \n", i+1);
 
                     break;
                 }

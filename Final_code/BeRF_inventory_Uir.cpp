@@ -22,12 +22,13 @@ using namespace std;
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 9000
+#define NumMacro 1000
 #define NumSys	77
 #define NumConstraint	1
 #define NumThreshold	4
 #define Num_s 20
 #define Num_S 20
+#define Theta 1.2
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -41,8 +42,8 @@ using namespace std;
 
 double MRG32k3a(void);  //Generate R(0,1) by L'ecuyer (1997)
 // choices of seeds for Generate R(0,1) by L'ecuyer (1997)
-//double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
-double  s10 = 43, s11 =54, s12 =65, s20 =43, s21 =54, s22 =65;
+double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
+//double  s10 = 43, s11 =54, s12 =65, s20 =43, s21 =54, s22 =65;
 //double  s10 = 4321111, s11 =1115432, s12 =1116543, s20 =4321111, s21 =1115432, s22 =6543111;
 //double  s10 = 43221, s11 =54332, s12 =65443, s20 =43321, s21 =54532, s22 =61543;
 //double  s10 = 1010, s11 =10, s12 =101, s20 =2001, s21 = 202, s22 = 202;
@@ -65,7 +66,7 @@ int read_system_true_value(void);
 int determine_true_feasibility(void);
 
 double q[NumConstraint][NumThreshold];
-double H[NumSys][NumConstraint];
+double H[NumConstraint];
 double dummies[NumConstraint][NumThreshold];
 double qL[NumConstraint][NumThreshold];
 double qU[NumConstraint][NumThreshold];
@@ -204,8 +205,8 @@ double generate_one_obs(int system_index, int demand_index) {
 
   for(int i=0; i < 12; i++){
     Cost = 0;
-    //Demand = poisson(demand_mean);
-    Demand = demand_list[demand_index+i];
+    Demand = poisson(demand_mean);
+    //Demand = demand_list[demand_index+j];
 
     if( current_level < LittleS) {
       next_level = BigS;
@@ -230,11 +231,11 @@ double generate_one_obs(int system_index, int demand_index) {
       single_obs[0] = 1;
     }
 
-    double rn = MRG32k3a();
+    double prn = MRG32k3a();
     for (int d = 0; d < NumThreshold; d++) {
       //double rn = MRG32k3a();
       dummies[j][d] = 0;
-      if (rn <= q[j][d]) {
+      if (prn <= q[j][d]) {
         dummies[j][d] = 1;
       }
     }
@@ -280,7 +281,7 @@ double configuration(void) {
     q[0][2] = 0.1;
     q[0][3] = 0.2;
 
-    theta[0] = 1.2;
+    theta[0] = 1.5;
 
 	return 0;
 }
@@ -297,31 +298,31 @@ double minfn(double x, double y)
 	else return y;
 }
 
-struct f {
-    //int idx;
-    //f(int index) : idx(index) {}
-    // 1 threshold. 95%
-    double alpha = 0.05;
-    // >= 2 threshold
-    double k = NumSys;
-    double s = NumConstraint;
-    double beta = (alpha/k) / (2 * s);
+// struct f {
+//     //int idx;
+//     //f(int index) : idx(index) {}
+//     // 1 threshold. 95%
+//     double alpha = 0.05;
+//     // >= 2 threshold
+//     double k = NumSys;
+//     double s = NumConstraint;
+//     double beta = (1 - (std::pow( (1-alpha), 1/k))) / (2 * s);
 
-    double operator()(double ell) {
-        return (1 / (1 + std::pow(theta[0], ell)) - beta);
-    }
-};
+//     double operator()(double ell) {
+//         return (1 / (1 + std::pow(theta[0], ell)) - beta);
+//     }
+// };
 
-double fsolve() {
-    const boost::uintmax_t maxit = 1000;
-    boost::uintmax_t it = maxit;
-    const double guess = 1.0;
-    const double min = 0.0;
-    const double max = 2.0;
-    boost::math::tools::eps_tolerance<double> tol((std::numeric_limits<double>::digits * 3) / 2);
-    std::pair<double, double> r = boost::math::tools::bracket_and_solve_root(f(), guess, 2.0, false, tol, it);
-    return r.first + (r.second - r.first) / 2;
-};
+// double fsolve() {
+//     const boost::uintmax_t maxit = 1000;
+//     boost::uintmax_t it = maxit;
+//     const double guess = 1.0;
+//     const double min = 0.0;
+//     const double max = 2.0;
+//     boost::math::tools::eps_tolerance<double> tol((std::numeric_limits<double>::digits * 3) / 2);
+//     std::pair<double, double> r = boost::math::tools::bracket_and_solve_root(f(), guess, 2.0, false, tol, it);
+//     return r.first + (r.second - r.first) / 2;
+// };
 
 int main()
 {
@@ -329,8 +330,30 @@ int main()
     determine_true_feasibility();
 
     outfile = NULL;
-    outfile = fopen("BeRF_inventory_CRN_1.2_10000.out","a");
+    outfile = fopen("feasibiliy_revision2.out","a");
 
+    double alpha;
+
+    alpha = 0.025;
+
+    double k = NumSys;
+    double s = NumConstraint;
+
+    printf("alpha: %.4f\n", alpha);
+    double beta[NumConstraint];
+    for(int j = 0; j < NumConstraint; j++ ){
+        //if no CRN
+        beta[j] = (1-pow(1-alpha, 1/k)) / (s);   
+
+        //if use CRN
+        //beta[j] = (alpha) / (k * s);
+    }
+
+    for(int j = 0; j < NumConstraint; j++){
+        H[j] = (log ((1/beta[j]) - 1))/(log (Theta));
+        H[j] = std::ceil(H[j]);
+        printf("H: %.1f\n", H[j]);
+    }
     //double eta[NumConstraint];
     //eta[0] = 0.6615;
     //eta[1] = 0.6615;
@@ -338,22 +361,12 @@ int main()
     for (int l=0; l<NumMacro; l++) {
 
         configuration();
-        generate_demand();
         total_obs = 0;
         final_cd = 1;
 
         double num_obs[NumSys][NumConstraint];
         double R[NumSys][NumConstraint];
         double Sil2[NumSys][NumConstraint];
-
-        for (int i = 0; i < NumSys; i++) {
-            for (int j = 0; j < NumConstraint; j++) {
-              num_obs[i][j] = 0;
-              H[i][j] = std::ceil(fsolve());
-              //printf("theta: %.10f\n", theta[j]);
-              // printf("H: %.10f\n", H[i][j]);
-            }
-        }
 
    		for (int i=0; i<NumSys; i++) {
 
@@ -372,7 +385,7 @@ int main()
    			}
 
         generate_one_obs(i, demand_index);
-        demand_index += 12;
+        demand_index += 30;
         total_obs += 1;
 
         for (int j = 0; j < NumConstraint; j++) {
@@ -397,13 +410,13 @@ int main()
 
    							if (ON_l[i][j][d] == 1) {
 
-                                if (sumY[j] - sumI[j][d] <= -H[i][j]) {
+                                if (sumY[j] - sumI[j][d] <= -H[j]) {
    									Z[i][j][d] = 1;
    									ON_l[i][j][d] = 0;
    									surviveThreshold[j] -= 1;
                                 }
 
-                                else if (sumY[j] - sumI[j][d] >= H[i][j]) {
+                                else if (sumY[j] - sumI[j][d] >= H[j]) {
       							    Z[i][j][d] = 0;
    									ON_l[i][j][d] = 0;
    				                    surviveThreshold[j] -= 1;
@@ -424,7 +437,7 @@ int main()
    				if (surviveConstraint == 0) break;
 
                 generate_one_obs(i, demand_index);
-                demand_index += 12;
+                demand_index += 30;
                 total_obs += 1;
 
           for (int j = 0; j < NumConstraint; j++) {
@@ -466,13 +479,13 @@ int main()
 
    		}
 
-      /* for (int i=0; i<NumSys; i++){
-        for (int j=0; j<NumConstraint; j++){
-          for (int d=0; d<NumThreshold; d++){
-            printf("%d\t%d\t%d\t%d\n", i, j, d, Z[i][j][d]);
-          }
-        }
-      } */
+      // for (int i=0; i<NumSys; i++){
+      //   for (int j=0; j<NumConstraint; j++){
+      //     for (int d=0; d<NumThreshold; d++){
+      //       printf("%d\t%d\t%d\t%d\n", i, j, d, Z[i][j][d]);
+      //     }
+      //   }
+      // }
 
       printf("%.1f\t%.5f\n", total_obs, final_cd);
 

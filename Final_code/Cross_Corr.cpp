@@ -89,6 +89,7 @@ double penalty_cost = 5;
 
 double total_obs;
 double final_cd;
+double correlation;
 
 FILE *outfile;
 
@@ -176,13 +177,6 @@ int determine_true_feasibility(void) {
     }
   }
   return 0;
-}
-
-int write_up(void) {
-
- fprintf(outfile, "%.1f\t%.5f\n", total_obs, final_cd);
-
- return 0;
 }
 
 int generate_demand() {
@@ -355,23 +349,33 @@ void generateSystemData(vector<vector<double>>& total_costs, vector<vector<doubl
                 total_cost += Cost;
             }
 
-            // for (int j = 0; j < 1; j++) {
-            //     single_obs[0] = 0;
-            //     //printf("total cost: %.10f\n", total_cost);
-            //     if (total_cost > 1400) {
-            //     single_obs[0] = 1;
-            //     }
-            // }
+            for (int j = 0; j < 1; j++) {
+                single_obs[0] = 0;
+                //printf("total cost: %.10f\n", total_cost);
+                if (total_cost > 1400) {
+                single_obs[0] = 1;
+                }
+            }
             // printf("System %.1d total cost: %.1f\n", systemIndex, total_cost);
             total_costs[systemIndex][obsIndex] = total_cost;
-            // single_obs_values[systemIndex][obsIndex] = single_obs[0];
+            single_obs_values[systemIndex][obsIndex] = single_obs[0];
             demand_index += 12;
         }
         printf("System %.1d obs generated completely.\n", systemIndex);
     }
 }
 
+int write_up(void) {
+
+ fprintf(outfile, "%.5f\n", correlation);
+
+ return 0;
+}
+
 int main() {
+
+    outfile = NULL;
+    outfile = fopen("CrossCorr_Bern","a");
 
     generate_demand();
     configuration();
@@ -384,22 +388,24 @@ int main() {
     generateSystemData(total_costs, single_obs_values, NumSys, ObservationsPerSystem);
     
     // 각 시스템 쌍에 대해 total_cost의 상관계수 계산
-    cout << "Correlation of total_costs between systems:" << endl;
-    for (int i = 0; i < NumSys; ++i) {
-        for (int j = i + 1; j < NumSys; ++j) {
-            double correlation = calculateCorrelation(total_costs[i], total_costs[j]);
-            cout << i << " " << j << " " << correlation << endl;
-        }
-    }
-    
-    // 각 시스템 쌍에 대해 single_obs의 상관계수 계산
-    // cout << "\nCorrelation of single_obs between systems:" << endl;
+    // cout << "Correlation of total_costs between systems:" << endl;
     // for (int i = 0; i < NumSys; ++i) {
     //     for (int j = i + 1; j < NumSys; ++j) {
-    //         double correlation = calculateCorrelation(single_obs_values[i], single_obs_values[j]);
+    //         correlation = calculateCorrelation(total_costs[i], total_costs[j]);
     //         cout << i << " " << j << " " << correlation << endl;
+    //         write_up();
     //     }
     // }
+    
+    // 각 시스템 쌍에 대해 single_obs의 상관계수 계산
+    cout << "\nCorrelation of single_obs between systems:" << endl;
+    for (int i = 0; i < NumSys; ++i) {
+        for (int j = i + 1; j < NumSys; ++j) {
+            correlation = calculateCorrelation(single_obs_values[i], single_obs_values[j]);
+            cout << i << " " << j << " " << correlation << endl;
+            write_up();
+        }
+    }
     
     return 0;
 }
