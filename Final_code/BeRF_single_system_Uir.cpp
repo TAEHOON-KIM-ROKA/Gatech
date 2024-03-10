@@ -25,17 +25,17 @@ using namespace std;
 
 #define NumMacro 10000
 #define NumSys	1
-#define NumConstraint	2
-#define NumThreshold	12
+#define NumConstraint	1
+#define NumThreshold	1
 #define Correlation     0
 
 double adjusting(double n);
-double probability[NumConstraint] = {0.15   //probability for 1st constraint
-                                   , 0.4    //probability for 2nd constraint
+double probability[NumConstraint] = {0.5   //probability for 1st constraint
+                                //    , 0.4    //probability for 2nd constraint
                                    };
 
 double theta[NumConstraint] = {1.5  //theta for 1st constraint
-                             , 1.5  //theta for 2nd constraint
+                            //  , 1.5  //theta for 2nd constraint
                              };
 
 double Lower(double x, double y);
@@ -45,7 +45,7 @@ double q[NumConstraint][NumThreshold] = {
 
     // 1 constraint 1 threshold case
     // {Lower(probability[0], theta[0])}
-    // {Upper(probability[0], theta[0])}
+    {Upper(probability[0], theta[0])}
     
     // 1,2 constraint 2 thresholds case
     //  {Lower(probability[0], theta[0]), Upper(probability[0], theta[0])}   //thresholds for 1st constraint
@@ -66,18 +66,18 @@ double q[NumConstraint][NumThreshold] = {
     //  Lower(probability[1], 1.5*theta[1]), Upper(probability[1], 1.5*theta[1])}   //thresholds for 2nd constraint
 
     // 2 constraints 12 thresholds case
-    {Lower(probability[0], theta[0]), Upper(probability[0], theta[0]),
-     Lower(probability[0], 1.2*theta[0]), Upper(probability[0], 1.2*theta[0]),
-     Lower(probability[0], 1.4*theta[0]), Upper(probability[0], 1.4*theta[0]),
-     Lower(probability[0], 1.6*theta[0]), Upper(probability[0], 1.6*theta[0]),
-     Lower(probability[0], 1.8*theta[0]), Upper(probability[0], 1.8*theta[0]),
-     Lower(probability[0], 2*theta[0]), Upper(probability[0], 2*theta[0])}   //thresholds for 1st constraint
-    ,{Lower(probability[1], theta[1]), Upper(probability[1], theta[1]),
-     Lower(probability[1], 1.2*theta[1]), Upper(probability[1], 1.2*theta[1]),
-     Lower(probability[1], 1.4*theta[1]), Upper(probability[1], 1.4*theta[1]),
-     Lower(probability[1], 1.6*theta[1]), Upper(probability[1], 1.6*theta[1]),
-     Lower(probability[1], 1.8*theta[1]), Upper(probability[1], 1.8*theta[1]),
-     Lower(probability[1], 2*theta[1]), Upper(probability[1], 2*theta[1])}   //thresholds for 1st constraint
+    // {Lower(probability[0], theta[0]), Upper(probability[0], theta[0]),
+    //  Lower(probability[0], 1.2*theta[0]), Upper(probability[0], 1.2*theta[0]),
+    //  Lower(probability[0], 1.4*theta[0]), Upper(probability[0], 1.4*theta[0]),
+    //  Lower(probability[0], 1.6*theta[0]), Upper(probability[0], 1.6*theta[0]),
+    //  Lower(probability[0], 1.8*theta[0]), Upper(probability[0], 1.8*theta[0]),
+    //  Lower(probability[0], 2*theta[0]), Upper(probability[0], 2*theta[0])}   //thresholds for 1st constraint
+    // ,{Lower(probability[1], theta[1]), Upper(probability[1], theta[1]),
+    //  Lower(probability[1], 1.2*theta[1]), Upper(probability[1], 1.2*theta[1]),
+    //  Lower(probability[1], 1.4*theta[1]), Upper(probability[1], 1.4*theta[1]),
+    //  Lower(probability[1], 1.6*theta[1]), Upper(probability[1], 1.6*theta[1]),
+    //  Lower(probability[1], 1.8*theta[1]), Upper(probability[1], 1.8*theta[1]),
+    //  Lower(probability[1], 2*theta[1]), Upper(probability[1], 2*theta[1])}   //thresholds for 1st constraint
 
     };
 

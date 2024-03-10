@@ -20,29 +20,29 @@ using namespace std;
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
 #define Nnot	20
-#define NumMacro 1000
+#define NumMacro 10000
 #define NumSys	1
-#define NumConstraint	2
-#define NumThreshold	2
-#define NumBatch    32
+#define NumConstraint	1
+#define NumThreshold	1
+#define NumBatch    10
 #define Correlation     0
 
-double probability[NumConstraint] = {0.15   //probability for 1st constraint
-                                   , 0.4    //probability for 2nd constraint
+double probability[NumConstraint] = {0.5   //probability for 1st constraint
+                                //    , 0.4    //probability for 2nd constraint
                                    };
 
-double theta[NumConstraint] = {1.2  //theta for 1st constraint
-                             , 1.2  //theta for 2nd constraint
+double theta[NumConstraint] = {1.5  //theta for 1st constraint
+                            //  , 1.2  //theta for 2nd constraint
                              };
 
 double q[NumConstraint][NumThreshold] = {
-                                        {0.16, 0.14}   //thresholds for 1st constraint
-                                        ,{0.35, 0.45}   //thresholds for 2nd constraint
+                                        {0.4}   //thresholds for 1st constraint
+                                        // ,{0.35, 0.45}   //thresholds for 2nd constraint
                                         }; 
 
 //Change this when the num of thresholds in any constraint is different from the defined NumThreshold
 double numthreshold[NumConstraint] = {NumThreshold //num of thresholds for 1st constraint
-                                        , NumThreshold //num of thresholds for 2nd constraint
+                                        // , NumThreshold //num of thresholds for 2nd constraint
                                         };
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
