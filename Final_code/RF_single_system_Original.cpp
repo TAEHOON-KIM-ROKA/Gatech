@@ -27,7 +27,7 @@ using namespace std;
 #define NumBatch    10
 #define Correlation     0
 
-double probability[NumConstraint] = {0.5   //probability for 1st constraint
+double probability[NumConstraint] = {0.7   //probability for 1st constraint
                                 //    , 0.4    //probability for 2nd constraint
                                    };
 

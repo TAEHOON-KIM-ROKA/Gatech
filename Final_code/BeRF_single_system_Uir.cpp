@@ -30,7 +30,7 @@ using namespace std;
 #define Correlation     0
 
 double adjusting(double n);
-double probability[NumConstraint] = {0.5   //probability for 1st constraint
+double probability[NumConstraint] = {0.99   //probability for 1st constraint
                                 //    , 0.4    //probability for 2nd constraint
                                    };
 
