@@ -24,15 +24,15 @@ using namespace std;
 #define NumSys	1
 #define NumConstraint	1
 #define NumThreshold	1
-#define NumBatch    32
+#define NumBatch    500
 #define Correlation     0
 
 // double adjusting(double n);
-double probability[NumConstraint] = {0.99   //probability for 1st constraint
+double probability[NumConstraint] = {0.01   //probability for 1st constraint
                                 //    , 0.4    //probability for 2nd constraint
                                    };
 
-double theta[NumConstraint] = {1.5  //theta for 1st constraint
+double theta[NumConstraint] = {1.2  //theta for 1st constraint
                             //  , 1.2  //theta for 2nd constraint
                              };
 
@@ -41,9 +41,13 @@ double Upper(double x, double y);
 
 double q[NumConstraint][NumThreshold] = {
 
+        // 1 constraint 1 threshold case
+    {(Lower(probability[0], theta[0]))}
+    // {Upper(probability[0], theta[0])}
+
     // 1 constraint 1 threshold case
     // {Lower(probability[0], theta[0])}
-    {Upper(probability[0], theta[0])}
+    // {Upper(probability[0], theta[0])}
     
     // 1,2 constraint 2 thresholds case
     //  {Lower(probability[0], theta[0]), Upper(probability[0], theta[0])}   //thresholds for 1st constraint

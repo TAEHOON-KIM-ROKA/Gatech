@@ -30,11 +30,11 @@ using namespace std;
 #define Correlation     0
 
 double adjusting(double n);
-double probability[NumConstraint] = {0.99   //probability for 1st constraint
+double probability[NumConstraint] = {0.15   //probability for 1st constraint
                                 //    , 0.4    //probability for 2nd constraint
                                    };
 
-double theta[NumConstraint] = {1.5  //theta for 1st constraint
+double theta[NumConstraint] = {1.2  //theta for 1st constraint
                             //  , 1.5  //theta for 2nd constraint
                              };
 
@@ -44,8 +44,12 @@ double Upper(double x, double y);
 double q[NumConstraint][NumThreshold] = {
 
     // 1 constraint 1 threshold case
+    {(Lower(probability[0], theta[0]))/2}
+    // {Upper(probability[0], theta[0])}
+
+    // 1 constraint 1 threshold case
     // {Lower(probability[0], theta[0])}
-    {Upper(probability[0], theta[0])}
+    // {Upper(probability[0], theta[0])}
     
     // 1,2 constraint 2 thresholds case
     //  {Lower(probability[0], theta[0]), Upper(probability[0], theta[0])}   //thresholds for 1st constraint
@@ -466,6 +470,9 @@ int main()
         H[j] = (log ((1/beta[j]) - 1))/(log (theta[j]));
         H[j] = std::ceil(H[j]);
         printf("H: %.1f\n", H[j]);
+        for(int d = 0; d < NumThreshold; d++){
+            printf("threshold: %.8f\n", q[j][d]);
+        }
     }
 
     for (int l = 0; l < NumMacro; l++) {    // iteration 시작. 

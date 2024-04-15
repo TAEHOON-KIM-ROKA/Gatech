@@ -28,9 +28,9 @@ using namespace std;
 #define NumConstraint	2
 #define NumThreshold	5
 #define Nnot 20
-#define Batchsize 32
+#define Batchsize 50
 #define Theta   1.2
-#define Epsilon 5
+#define Epsilon 2.5
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10

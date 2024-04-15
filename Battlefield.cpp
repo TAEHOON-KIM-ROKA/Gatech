@@ -411,7 +411,7 @@ int main()
                             if (surviveThreshold[j] == 0) { 
                                 ON[i][j] = 0;
                                 surviveConstraint -= 1;
-                                // printf("s %d BeRF end with %.0f data \n", i+1, num_obs[i][0]);
+                                printf("s %d BeRF end with %.0f data \n", i+1, num_obs[i][0]);
                             }
                         }
                     //}
@@ -444,7 +444,7 @@ int main()
                                 if (surviveThreshold[j] == 0) {     //더이상 검사안한 threshold가 없으면 해당 constraint도 검사한거로 변경
                                     ON[i][j] = 0;
                                     surviveConstraint -= 1;
-                                    // printf("s %d RF end with %.0f data \n", i+1, num_obs[i][1]);
+                                    printf("s %d RF end with %.0f data \n", i+1, num_obs[i][1]);
                                 }
                             }
                         }
@@ -455,7 +455,7 @@ int main()
 
                 else if (reader.isEOFReached()) { 
                     
-                    // printf("****system %d needs more data.**** \n", i+1);
+                    printf("****system %d needs more data.**** \n", i+1);
 
                     break;
                 }
