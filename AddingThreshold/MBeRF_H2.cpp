@@ -24,7 +24,7 @@ using namespace std;
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 10000
+#define NumMacro 1000
 #define NumSys	1
 #define NumConstraint	1
 #define NumThreshold	4
@@ -162,7 +162,7 @@ int mberf1(int pass_index) {
 
    			for (int j=0; j<NumConstraint; j++) {
 
-   				if ((v_UB[i][j] > v_LB[i][j])) {
+   				// if ((v_UB[i][j] > v_LB[i][j])) {
 
                     if ((sumY[i][j]+H[j])/num_obs[i][j] < v_UB[i][j]) LAST[i][j] = 0;   // UB is 0
                     if ((sumY[i][j]-H[j])/num_obs[i][j] > v_LB[i][j]) LAST[i][j] = 1;   // LB is 1
@@ -176,13 +176,13 @@ int mberf1(int pass_index) {
 
                             if (ON_l[i][j][d] == 1) {
 
-                                if (v_UB[i][j] <= (sumI[i][j][d])/num_obs[i][j]) {
+                                if ((sumY[i][j]+H[j])/num_obs[i][j] <= (sumI[i][j][d]/num_obs[i][j])) {
        								MBeRF_Z[i][j][d] = 1;
        								ON_l[i][j][d] = 0;
        								surviveThreshold[j] -= 1;
                                 }
 
-                                else if (v_LB[i][j] >= (sumI[i][j][d])/num_obs[i][j]) {
+                                else if ((sumY[i][j]-H[j])/num_obs[i][j] >= (sumI[i][j][d]/num_obs[i][j])) {
                                     MBeRF_Z[i][j][d] = 0;
        								ON_l[i][j][d] = 0;
        				                surviveThreshold[j] -= 1;
@@ -197,7 +197,7 @@ int mberf1(int pass_index) {
                             surviveConstraint -= 1;
                         }
                     }
-   				}
+   				// }
    			}
 
    			if (surviveConstraint == 0) {
@@ -207,22 +207,31 @@ int mberf1(int pass_index) {
 
    			for (int j=0; j<NumConstraint; j++) {
 
-                if (v_UB[i][j] > v_LB[i][j]) {
+                // if (v_UB[i][j] > v_LB[i][j]) {
+                if (ON[i][j] == 1) {
                     generate_Bernoulli(NumConstraint, i, j);
                     sumY[i][j] += observations[i][j];
                     for (int d = 0; d < NumThreshold; d++) {
                         sumI[i][j][d] += dummies[j][d];
                     }
                     num_obs[i][j] += 1;     //각 constraint마다 존재하는 obs의 갯수
-                    MBeRF_total_obs[j] += 1;                
-                }
+                    MBeRF_total_obs[j] += 1;        
+                }        
+                // }
    			}
 
             mberf_total += 1;
             MBeRF_rep_by_pass[pass_index] += 1;
             mberf_per_macro[pass_index] += 1;
    		}
-   	}
+   	
+        // for (int j=0; j<NumConstraint; j++) {
+        //     for(int d = 0; d < NumThreshold; d++) {
+        //         printf("%.5f\n", sumI[i][j][d]);
+        //     }
+        // }
+    
+    }
 
     return 0;
 }
@@ -247,6 +256,12 @@ int mberf2(int pass_index) {
 
         int surviveConstraint = 0;
         int surviveThreshold[NumConstraint];
+
+        // for (int j=0; j<NumConstraint; j++) {
+        //     for(int d = 0; d < NumThreshold; d++) {
+        //         printf("%.5f\n", sumI[i][j][d]);
+        //     }
+        // }
 
         for (int j=0; j<NumConstraint; j++) {
             surviveThreshold[j] = 0;
@@ -309,7 +324,6 @@ int mberf2(int pass_index) {
                     }
                 }
             }
-
     //        printf("%d\n", surviveConstraint);
             if (surviveConstraint == 0) {
                 // printf("MBeRF2-1 finished\n");
@@ -317,7 +331,7 @@ int mberf2(int pass_index) {
 
             for (int j=0; j<NumConstraint; j++) {
 
-                if (v_UB[i][j] > v_LB[i][j]) {
+                if ((ON[i][j] == 1) & (v_UB[i][j] > v_LB[i][j])) {
                     generate_Bernoulli(NumConstraint, i, j);
                     sumY[i][j] += observations[i][j];
                     for (int d = 0; d < NumThreshold; d++) {
@@ -348,6 +362,8 @@ int mberf2(int pass_index) {
                         if (T_index[pass_index][d][j] == 1) {
 
                             if (ON_l[i][j][d] == 1) {
+
+                                // printf("%.5f\t%.5f\t%.5f\n", v_LB[i][j], v_UB[i][j], (sumI[i][j][d]/num_obs[i][j]));
 
                                 if (v_UB[i][j] <= (sumI[i][j][d]/num_obs[i][j])) {
        								MBeRF_Z[i][j][d] = 1;
@@ -447,7 +463,7 @@ int berf(void) {
    								surviveThreshold[j] -= 1;
                             }
 
-                            if ((sumY[i][j]-H[j])/num_obs[i][j] >= (sumI[i][j][d]/num_obs[i][j])) {
+                            else if ((sumY[i][j]-H[j])/num_obs[i][j] >= (sumI[i][j][d]/num_obs[i][j])) {
                                 BeRF_Z[i][j][d] = 0;
    								ON_l[i][j][d] = 0;
    				                surviveThreshold[j] -= 1;
@@ -814,6 +830,8 @@ int main() {
 
         double mrf_total_rep_per_macro = 0;
         for (int p=0; p<NumPass; p++) mrf_total_rep_per_macro += mberf_per_macro[p];
+
+        // printf("%.5f\n", mrf_total_rep_per_macro);
         if (mrf_total_rep_per_macro == berf_per_macro) matching_rep += 1;
 
     }
