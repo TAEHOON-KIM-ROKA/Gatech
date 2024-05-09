@@ -255,7 +255,7 @@ int mberf2(int pass_index) {
         for (int j=0; j<NumConstraint; j++) {
             surviveThreshold[j] = 0;
             for (int d=0; d<NumThreshold; d++) {
-                if (T_index[i][d][j] == 1) {
+                if (T_index[pass_index][d][j] == 1) {
                     surviveThreshold[j] += 1;
                 }
             }

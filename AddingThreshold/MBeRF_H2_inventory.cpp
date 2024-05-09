@@ -275,7 +275,7 @@ int mberf2(int pass_index) {
         for (int j=0; j<NumConstraint; j++) {
             surviveThreshold[j] = 0;
             for (int d=0; d<NumThreshold; d++) {
-                if (T_index[i][d][j] == 1) {
+                if (T_index[pass_index][d][j] == 1) {
                     surviveThreshold[j] += 1;
                 }
             }
@@ -307,7 +307,7 @@ int mberf2(int pass_index) {
                                             surviveThreshold[j] -= 1;
                                         }
 
-                                        else if (LAST[i][j] == 1) {
+                                        if (LAST[i][j] == 1) {
                                             MBeRF_Z[i][j][d] = 1;
                                             ON_l[i][j][d] = 0;
                                             surviveThreshold[j] -= 1;
@@ -380,7 +380,7 @@ int mberf2(int pass_index) {
        								surviveThreshold[j] -= 1;
                                 }
 
-                                else if (v_LB[i][j] >= (sumI[i][j][d]/num_obs[i][j])) {
+                                if (v_LB[i][j] >= (sumI[i][j][d]/num_obs[i][j])) {
                                     MBeRF_Z[i][j][d] = 0;
        								ON_l[i][j][d] = 0;
        				                surviveThreshold[j] -= 1;
@@ -818,23 +818,29 @@ int main() {
         // MBeRF section
         correct_mberf = 1;
 
-        // first pass
+        // // first pass
         // T_index[0][0][0] = 0; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 0; 
         // T_index[0][4][0] = 1; T_index[0][5][0] = 1; T_index[0][6][0] = 1; T_index[0][7][0] = 1;
-        // // T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
 
         // // second pass
         // T_index[1][0][0] = 1; T_index[1][1][0] = 1; T_index[1][2][0] = 1; T_index[1][3][0] = 1;
         // T_index[1][4][0] = 0; T_index[1][5][0] = 0; T_index[1][6][0] = 0; T_index[1][7][0] = 0;
-        // // T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+
+        // // first pass
+        // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1; 
+        // T_index[0][4][0] = 0; T_index[0][5][0] = 0; T_index[0][6][0] = 0; T_index[0][7][0] = 0;
+
+        // // second pass
+        // T_index[1][0][0] = 0; T_index[1][1][0] = 0; T_index[1][2][0] = 0; T_index[1][3][0] = 0;
+        // T_index[1][4][0] = 1; T_index[1][5][0] = 1; T_index[1][6][0] = 1; T_index[1][7][0] = 1;
 
         // first pass
-        T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1; 
-        T_index[0][4][0] = 0; T_index[0][5][0] = 0; T_index[0][6][0] = 0; T_index[0][7][0] = 0;
+        T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 0; T_index[0][3][0] = 0; 
+        T_index[0][4][0] = 0; T_index[0][5][0] = 0; T_index[0][6][0] = 1; T_index[0][7][0] = 1;
 
         // second pass
-        T_index[1][0][0] = 0; T_index[1][1][0] = 0; T_index[1][2][0] = 0; T_index[1][3][0] = 0;
-        T_index[1][4][0] = 1; T_index[1][5][0] = 1; T_index[1][6][0] = 1; T_index[1][7][0] = 1;
+        T_index[1][0][0] = 0; T_index[1][1][0] = 0; T_index[1][2][0] = 1; T_index[1][3][0] = 1;
+        T_index[1][4][0] = 1; T_index[1][5][0] = 1; T_index[1][6][0] = 0; T_index[1][7][0] = 0;
 
         // first pass
         // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1; 
@@ -864,8 +870,11 @@ int main() {
 //        printf("%d\t%d\t%d\t%d\n", MRF_Z[0][1][0], MRF_Z[0][1][1], MRF_Z[0][1][2], MRF_Z[0][1][3]);
 
         mberf2(1);
-//        printf("%d\t%d\t%d\t%d\n", MRF_Z[0][0][0], MRF_Z[0][0][1], MRF_Z[0][0][2], MRF_Z[0][0][3]);
-//        printf("%d\t%d\t%d\t%d\n", MRF_Z[0][1][0], MRF_Z[0][1][1], MRF_Z[0][1][2], MRF_Z[0][1][3]);
+        
+        // for (int i=0; i<NumSys; i++) {
+        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", BeRF_Z[i][0][0], BeRF_Z[i][0][1], BeRF_Z[i][0][2], BeRF_Z[i][0][3], BeRF_Z[i][0][4], BeRF_Z[i][0][5], BeRF_Z[i][0][6], BeRF_Z[i][0][7]);
+        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", MBeRF_Z[i][0][0], MBeRF_Z[i][0][1], MBeRF_Z[i][0][2], MBeRF_Z[i][0][3], MBeRF_Z[i][0][4], MBeRF_Z[i][0][5], MBeRF_Z[i][0][6], MBeRF_Z[i][0][7]);
+        // }
 
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {

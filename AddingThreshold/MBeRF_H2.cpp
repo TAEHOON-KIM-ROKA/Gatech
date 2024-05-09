@@ -266,7 +266,7 @@ int mberf2(int pass_index) {
         for (int j=0; j<NumConstraint; j++) {
             surviveThreshold[j] = 0;
             for (int d=0; d<NumThreshold; d++) {
-                if (T_index[i][d][j] == 1) {
+                if (T_index[pass_index][d][j] == 1) {
                     surviveThreshold[j] += 1;
                 }
             }
@@ -792,6 +792,11 @@ int main() {
         mberf2(1);
 //        printf("%d\t%d\t%d\t%d\n", MRF_Z[0][0][0], MRF_Z[0][0][1], MRF_Z[0][0][2], MRF_Z[0][0][3]);
 //        printf("%d\t%d\t%d\t%d\n", MRF_Z[0][1][0], MRF_Z[0][1][1], MRF_Z[0][1][2], MRF_Z[0][1][3]);
+
+        // for (int i=0; i<NumSys; i++) {
+        //     printf("%d\t%d\t%d\t%d\n", BeRF_Z[i][0][0], BeRF_Z[i][0][1], BeRF_Z[i][0][2], BeRF_Z[i][0][3]);
+        //     printf("%d\t%d\t%d\t%d\n", MBeRF_Z[i][0][0], MBeRF_Z[i][0][1], MBeRF_Z[i][0][2], MBeRF_Z[i][0][3]);
+        // }
 
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {

@@ -275,7 +275,7 @@ int mberf2(int pass_index) {
         for (int j=0; j<NumConstraint; j++) {
             surviveThreshold[j] = 0;
             for (int d=0; d<NumThreshold; d++) {
-                if (T_index[i][d][j] == 1) {
+                if (T_index[pass_index][d][j] == 1) {
                     surviveThreshold[j] += 1;
                 }
             }
@@ -818,25 +818,29 @@ int main() {
         // MBeRF section
         correct_mberf = 1;
 
-        // // first pass
+        // first pass
         // T_index[0][0][0] = 0; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 0; 
         // T_index[0][4][0] = 1; T_index[0][5][0] = 1; T_index[0][6][0] = 1; T_index[0][7][0] = 1;
-        // // T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
 
         // // second pass
         // T_index[1][0][0] = 1; T_index[1][1][0] = 1; T_index[1][2][0] = 1; T_index[1][3][0] = 1;
         // T_index[1][4][0] = 0; T_index[1][5][0] = 0; T_index[1][6][0] = 0; T_index[1][7][0] = 0;
-        // // T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+
+        // // first pass
+        // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1; 
+        // T_index[0][4][0] = 0; T_index[0][5][0] = 0; T_index[0][6][0] = 0; T_index[0][7][0] = 0;
+
+        // // second pass
+        // T_index[1][0][0] = 0; T_index[1][1][0] = 0; T_index[1][2][0] = 0; T_index[1][3][0] = 0;
+        // T_index[1][4][0] = 1; T_index[1][5][0] = 1; T_index[1][6][0] = 1; T_index[1][7][0] = 1;
 
         // first pass
         T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 0; T_index[0][3][0] = 0; 
         T_index[0][4][0] = 0; T_index[0][5][0] = 0; T_index[0][6][0] = 1; T_index[0][7][0] = 1;
-        // T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
 
         // second pass
         T_index[1][0][0] = 0; T_index[1][1][0] = 0; T_index[1][2][0] = 1; T_index[1][3][0] = 1;
         T_index[1][4][0] = 1; T_index[1][5][0] = 1; T_index[1][6][0] = 0; T_index[1][7][0] = 0;
-        // T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
 
 
         for (int i=0; i<NumSys; i++) {
