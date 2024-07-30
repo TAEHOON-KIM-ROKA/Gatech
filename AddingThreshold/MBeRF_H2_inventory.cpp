@@ -27,8 +27,8 @@ using namespace std;
 #define NumMacro 100
 #define NumSys	77
 #define NumConstraint	2
-#define NumThreshold	4
-#define NumPass 1
+#define NumThreshold	7
+#define NumPass 7
 #define Num_s 20
 #define Num_S 20
 #define Theta   1.5
@@ -43,6 +43,7 @@ using namespace std;
 #define a23n    1370589.0
 
 double MRG32k3a(int sys_index, int constraint_index);  //Generate R(0,1) by L'ecuyer (1997)
+double MRG32k3a_y(int sys_index, int constraint_index);
 // choices of seeds for Generate R(0,1) by L'ecuyer (1997)
 //double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
 
@@ -93,7 +94,7 @@ double MBeRF_rep_by_pass[NumPass];
 int T_index[NumPass][NumThreshold][NumConstraint];
 
 int system_value[NumSys][2];
-// double system_true_value[NumSys][1] = {0};
+// double system_true_value[NumSys][2] = {0};
 double system_true_value[NumSys][2];
 int true_feasibility[NumSys][NumConstraint][NumThreshold];
 double single_obs[NumConstraint];
@@ -237,9 +238,11 @@ int mberf1(int pass_index) {
                 // if (v_UB[i][j] > v_LB[i][j]) {
                 if (ON[i][j] == 1) {
                     generate_one_obs(demand_index, i, j);
+                    // printf("2nd obs: %.1f\n",single_obs[1]);
                     sumY[i][j] += single_obs[j];
                     for (int d = 0; d < NumThreshold; d++) {
                         sumI[i][j][d] += dummies[j][d];
+                        // printf("2nd dummy obs: %.1f\n",dummies[1][d]);
                     }
                     num_obs[i][j] += 1;     //각 constraint마다 존재하는 obs의 갯수
                     MBeRF_total_obs[j] += 1;    
@@ -631,7 +634,7 @@ int read_system_true_value(void) {
     myfile2.close();
   }
 
-  for (int i = 0; i < NumSys; i++) printf("sys_true: %.10f\t%.10f\n", system_true_value[i][0], system_true_value[i][1]);
+//   for (int i = 0; i < NumSys; i++) printf("sys_true: %.10f\t%.10f\n", system_true_value[i][0], system_true_value[i][1]);
   return 0;
 }
 
@@ -695,7 +698,8 @@ double generate_one_obs(int demand_index, int sys_index, int constraint_index) {
     total_cost += Cost;
   }
 
-  double prn = MRG32k3a_y(sys_index, constraint_index);
+//   printf("num stock outs: %.10f\n", num_stock_out_periods);
+
   for (int j = 0; j < 1; j++) {
     single_obs[0] = 0;
     single_obs[1] = 0;
@@ -707,7 +711,11 @@ double generate_one_obs(int demand_index, int sys_index, int constraint_index) {
     if (num_stock_out_periods >= 1) {
       single_obs[1] = 1;
     }
+  }
 
+  double prn = MRG32k3a_y(sys_index, constraint_index);
+  for (int j = 0; j < NumConstraint; j++) {
+    // printf("2nd obs: %.10f\n", single_obs[1]); inventory에서 dummies만들때 Numconstraint가 아니라 1로 들어가있는거 있음.. 두시간동안 찾았네.
     for (int d = 0; d < NumThreshold; d++) {
       //double rn = MRG32k3a();
       dummies[j][d] = 0;
@@ -762,6 +770,10 @@ int main() {
     read_system_true_value();
     determine_true_feasibility();
 
+    for (int i=0; i<NumSys; i++){
+        printf("sys_true: %.10f\t%.10f\n", system_true_value[i][0], system_true_value[i][1]);
+    }
+
     outfile = NULL;
     outfile = fopen("feasibiliy_MBeRF2_inventory","a");
 
@@ -769,14 +781,20 @@ int main() {
     // q[1][0] = 0.02; 
     // q[2][0] = 0.03; 
     // q[3][0] = 0.04;
-    q[0][0] = 0.05; 
-    q[1][0] = 0.1; 
-    q[2][0] = 0.15; 
+    q[0][0] = 0.01; 
+    q[1][0] = 0.05; 
+    q[2][0] = 0.1; 
     q[3][0] = 0.2;
-    q[0][1] = 0.05; 
-    q[1][1] = 0.1; 
-    q[2][1] = 0.15; 
+    q[4][0] = 0.3;
+    q[5][0] = 0.4;
+    q[6][0] = 0.5;
+    q[0][1] = 0.01; 
+    q[1][1] = 0.05; 
+    q[2][1] = 0.1; 
     q[3][1] = 0.2;
+    q[4][1] = 0.3;
+    q[5][1] = 0.4;
+    q[6][1] = 0.5;
 
     // q[0][0] = 0.05; 
     // q[1][0] = 0.1; 
@@ -788,7 +806,7 @@ int main() {
     double beta_prime = beta/2;
 
     for(int j = 0; j < NumConstraint; j++){
-        H[j] = (log ((1/beta) - 1))/(log (Theta));
+        H[j] = (log ((1/beta_prime) - 1))/(log (Theta));
         H[j] = std::ceil(H[j]);
         printf("H: %.1f\n", H[j]);
         for(int d = 0; d < NumThreshold; d++){
@@ -923,15 +941,29 @@ int main() {
         // T_index[1][0][0] = 0; T_index[1][1][0] = 0; T_index[1][2][0] = 1; T_index[1][3][0] = 1;
         // T_index[1][4][0] = 1; T_index[1][5][0] = 1; T_index[1][6][0] = 0; T_index[1][7][0] = 0;
 
-        //all thresholds for 2 constraints
-        T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1; 
-        T_index[0][0][1] = 1; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 1; 
+        //all thresholds for 2 constraints. This is for 4 thresholds.
+        T_index[0][0][0] = 0; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 0; T_index[0][4][0] = 0; T_index[0][5][0] = 0; T_index[0][6][0] = 1;
+        T_index[0][0][1] = 0; T_index[0][1][1] = 0; T_index[0][2][1] = 0; T_index[0][3][1] = 0; T_index[0][4][1] = 0; T_index[0][5][1] = 0; T_index[0][6][1] = 1;
+
+        T_index[1][0][0] = 0; T_index[1][1][0] = 0; T_index[1][2][0] = 0; T_index[1][3][0] = 0; T_index[1][4][0] = 0; T_index[1][5][0] = 1; T_index[1][6][0] = 0;
+        T_index[1][0][1] = 0; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 0; T_index[1][4][1] = 0; T_index[1][5][1] = 1; T_index[1][6][1] = 0;
+
+        T_index[2][0][0] = 0; T_index[2][1][0] = 0; T_index[2][2][0] = 0; T_index[2][3][0] = 0; T_index[2][4][0] = 1; T_index[2][5][0] = 0; T_index[2][6][0] = 0;
+        T_index[2][0][1] = 0; T_index[2][1][1] = 0; T_index[2][2][1] = 0; T_index[2][3][1] = 0; T_index[2][4][1] = 1; T_index[2][5][1] = 0; T_index[2][6][1] = 0;
+        
+        T_index[3][0][0] = 0; T_index[3][1][0] = 0; T_index[3][2][0] = 0; T_index[3][3][0] = 1; T_index[3][4][0] = 0; T_index[3][5][0] = 0; T_index[3][6][0] = 0;
+        T_index[3][0][1] = 0; T_index[3][1][1] = 0; T_index[3][2][1] = 0; T_index[3][3][1] = 1; T_index[3][4][1] = 0; T_index[3][5][1] = 0; T_index[3][6][1] = 0;
+
+        T_index[4][0][0] = 0; T_index[4][1][0] = 0; T_index[4][2][0] = 1; T_index[4][3][0] = 0; T_index[4][4][0] = 0; T_index[4][5][0] = 0; T_index[4][6][0] = 0;
+        T_index[4][0][1] = 0; T_index[4][1][1] = 0; T_index[4][2][1] = 1; T_index[4][3][1] = 0; T_index[4][4][1] = 0; T_index[4][5][1] = 0; T_index[4][6][1] = 0;
+
+        T_index[5][0][0] = 0; T_index[5][1][0] = 1; T_index[5][2][0] = 0; T_index[5][3][0] = 0; T_index[5][4][0] = 0; T_index[5][5][0] = 0; T_index[5][6][0] = 0;
+        T_index[5][0][1] = 0; T_index[5][1][1] = 1; T_index[5][2][1] = 0; T_index[5][3][1] = 0; T_index[5][4][1] = 0; T_index[5][5][1] = 0; T_index[5][6][1] = 0;
+
+        T_index[6][0][0] = 1; T_index[6][1][0] = 0; T_index[6][2][0] = 0; T_index[6][3][0] = 0; T_index[6][4][0] = 0; T_index[6][5][0] = 0; T_index[6][6][0] = 0;
+        T_index[6][0][1] = 1; T_index[6][1][1] = 0; T_index[6][2][1] = 0; T_index[6][3][1] = 0; T_index[6][4][1] = 0; T_index[6][5][1] = 0; T_index[6][6][1] = 0;
         
 
-        // first pass
-        // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1; 
-        // T_index[0][4][0] = 1; T_index[0][5][0] = 1; T_index[0][6][0] = 1; T_index[0][7][0] = 1;
-        // T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
 
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {
@@ -963,14 +995,21 @@ int main() {
 //        printf("%.f\t%.f\t%.f\t%.f\t%.f\t%.f\n", s10[0][0], s11[0][0], s12[0][0],s20[0][0], s21[0][0], s22[0][0]);
 
         mberf1(0);
-//        printf("%d\t%d\t%d\t%d\n", MRF_Z[0][0][0], MRF_Z[0][0][1], MRF_Z[0][0][2], MRF_Z[0][0][3]);
-//        printf("%d\t%d\t%d\t%d\n", MRF_Z[0][1][0], MRF_Z[0][1][1], MRF_Z[0][1][2], MRF_Z[0][1][3]);
+    //    printf("%d\t%d\t%d\t%d\n", MRF_Z[0][0][0], MRF_Z[0][0][1], MRF_Z[0][0][2], MRF_Z[0][0][3]);
+    //    printf("%d\t%d\t%d\t%d\n", MRF_Z[0][1][0], MRF_Z[0][1][1], MRF_Z[0][1][2], MRF_Z[0][1][3]);
 
-        // mberf2(1);
+        mberf2(1);
+        mberf2(2);
+        mberf2(3);
+        mberf2(4);
+        mberf2(5);
+        mberf2(6);
         
         // for (int i=0; i<NumSys; i++) {
-        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", BeRF_Z[i][0][0], BeRF_Z[i][0][1], BeRF_Z[i][0][2], BeRF_Z[i][0][3], BeRF_Z[i][0][4], BeRF_Z[i][0][5], BeRF_Z[i][0][6], BeRF_Z[i][0][7]);
-        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", MBeRF_Z[i][0][0], MBeRF_Z[i][0][1], MBeRF_Z[i][0][2], MBeRF_Z[i][0][3], MBeRF_Z[i][0][4], MBeRF_Z[i][0][5], MBeRF_Z[i][0][6], MBeRF_Z[i][0][7]);
+        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", BeRF_Z[i][0][0], BeRF_Z[i][0][1], BeRF_Z[i][0][2], BeRF_Z[i][0][3]);
+        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", MBeRF_Z[i][0][0], MBeRF_Z[i][0][1], MBeRF_Z[i][0][2], MBeRF_Z[i][0][3]);
+        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", BeRF_Z[i][1][0], BeRF_Z[i][1][1], BeRF_Z[i][1][2], BeRF_Z[i][1][3]);
+        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", MBeRF_Z[i][1][0], MBeRF_Z[i][1][1], MBeRF_Z[i][1][2], MBeRF_Z[i][1][3]);
         // }
 
         for (int i=0; i<NumSys; i++) {
