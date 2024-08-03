@@ -16,9 +16,9 @@
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
                 "-I",
-                "C:\\Users\\USER\\boost_1_82_0",
+                "C:/Users/USER/boost_1_82_0",
                 "-L",
-                "C:\\Users\\USER\\boost_1_82_0\\stage\\lib"
+                "C:/Users/USER/boost_1_82_0/stage/lib"
             ],
             "group": "build",
             "problemMatcher": {
@@ -27,7 +27,7 @@
                     "${workspaceRoot}"
                 ],
                 "pattern": {
-                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning error):\\s+(.*)$",
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
                     "file": 1,
                     "line": 2,
                     "column": 3,
@@ -51,7 +51,7 @@
                     "${workspaceRoot}"
                 ],
                 "pattern": {
-                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning error):\\s+(.*)$",
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
                     "file": 1,
                     "line": 2,
                     "column": 3,
@@ -82,7 +82,9 @@
                 "-g",
                 "${file}",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${fileDirname}/${fileBasenameNoExtension}.exe",
+                "-I",
+                "C:/Users/USER/boost_1_82_0"
             ],
             "options": {
                 "cwd": "C:/mingw64/bin"
