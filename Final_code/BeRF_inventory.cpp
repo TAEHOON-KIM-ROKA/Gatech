@@ -22,13 +22,13 @@ using namespace std;
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 1000
+#define NumMacro 100
 #define NumSys	77
 #define NumConstraint	1
 #define NumThreshold	4
 #define Num_s 20
 #define Num_S 20
-#define Theta 1.2
+#define Theta 1.5
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10

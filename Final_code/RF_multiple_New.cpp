@@ -400,13 +400,13 @@ int main()
             }
             single_obs[j] = total_single_obs[j]/batch_size;
             // printf("obs: %.5f\n",single_obs[1]);
-
-            for (int j=0; j<NumConstraint; j++) {
-                      sumY[j] += single_obs[j];
-                      sum_squareY[j] += single_obs[j]*single_obs[j];
-                      num_obs[i][j] += 1;
-            }
           }
+
+          for (int j=0; j<NumConstraint; j++) {
+              sumY[j] += single_obs[j];
+              sum_squareY[j] += single_obs[j]*single_obs[j];
+              num_obs[i][j] += 1;
+            }
           total_obs += 1;
           demand_index += 30;
    			}
@@ -463,12 +463,13 @@ int main()
               total_single_obs[j] += single_sub_obs[j];
             }
             single_obs[j] = total_single_obs[j]/batch_size;
+          }
 
-            for (int j=0; j<NumConstraint; j++) {
+          for (int j=0; j<NumConstraint; j++) {
               sumY[j] += single_obs[j];
               num_obs[i][j] += 1;
-            }
           }
+
           total_obs += 1;
           demand_index += 30;
 

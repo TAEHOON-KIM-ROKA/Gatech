@@ -27,8 +27,8 @@ using namespace std;
 #define NumMacro 100
 #define NumSys	77
 #define NumConstraint	2
-#define NumThreshold	7
-#define NumPass 7
+#define NumThreshold	26
+#define NumPass 2
 #define Num_s 20
 #define Num_S 20
 #define Theta   1.5
@@ -496,9 +496,7 @@ int berf(void) {
                         ON[i][j] = 0;
                         surviveConstraint -= 1;
                     }
-
    				}
-
    			}
 
    			if (surviveConstraint == 0) {
@@ -724,8 +722,6 @@ double generate_one_obs(int demand_index, int sys_index, int constraint_index) {
       }
     }
   }
-
-
   return 0;
 }
 
@@ -745,6 +741,40 @@ double configuration(void) {
             }
         }
     }
+
+
+    // if (NumConstraint == 1){
+    // q[0][0] = 0.01; 
+    // q[1][0] = 0.05; 
+    // q[2][0] = 0.1; 
+    // q[3][0] = 0.2;
+    // q[4][0] = 0.3;
+    // q[5][0] = 0.4;
+    // q[6][0] = 0.5;
+    // }
+    // else {
+    // q[0][0] = 0.01; 
+    // q[1][0] = 0.05; 
+    // q[2][0] = 0.1; 
+    // q[3][0] = 0.2;
+    // q[4][0] = 0.3;
+    // q[5][0] = 0.4;
+    // q[6][0] = 0.5;
+    // // q[4][0] = 0.3;
+    // // q[5][0] = 0.4;
+    // // q[6][0] = 0.5;
+    // q[0][1] = 0.01; 
+    // q[1][1] = 0.05; 
+    // q[2][1] = 0.1; 
+    // q[3][1] = 0.2;
+    // q[4][1] = 0.3;
+    // q[5][1] = 0.4;
+    // q[6][1] = 0.5;
+    // // q[4][1] = 0.3;
+    // // q[5][1] = 0.4;
+    // // q[6][1] = 0.5;
+
+    // }
 
     //epsilon[0] = 0.001;
     //epsilon[1] = 0.5;
@@ -769,6 +799,7 @@ int main() {
 
     read_system_true_value();
     determine_true_feasibility();
+    configuration();
 
     for (int i=0; i<NumSys; i++){
         printf("sys_true: %.10f\t%.10f\n", system_true_value[i][0], system_true_value[i][1]);
@@ -777,29 +808,10 @@ int main() {
     outfile = NULL;
     outfile = fopen("feasibiliy_MBeRF2_inventory","a");
 
-    // q[0][0] = 0.01; 
-    // q[1][0] = 0.02; 
-    // q[2][0] = 0.03; 
-    // q[3][0] = 0.04;
-    q[0][0] = 0.01; 
-    q[1][0] = 0.05; 
-    q[2][0] = 0.1; 
-    q[3][0] = 0.2;
-    q[4][0] = 0.3;
-    q[5][0] = 0.4;
-    q[6][0] = 0.5;
-    q[0][1] = 0.01; 
-    q[1][1] = 0.05; 
-    q[2][1] = 0.1; 
-    q[3][1] = 0.2;
-    q[4][1] = 0.3;
-    q[5][1] = 0.4;
-    q[6][1] = 0.5;
-
-    // q[0][0] = 0.05; 
-    // q[1][0] = 0.1; 
-    // q[2][0] = 0.15; 
-    // q[3][0] = 0.2;
+    for (int d = 0; d < NumThreshold; d++) {
+        q[d][0] = 0.01 + 0.02 * (d);
+        q[d][1] = 0.01 + 0.02 * (d);
+    }
 
     double alpha = 0.05;
     double beta = (1-pow(1-alpha, (double) 1/NumSys))/NumConstraint;    // independant systems
@@ -809,8 +821,8 @@ int main() {
         H[j] = (log ((1/beta_prime) - 1))/(log (Theta));
         H[j] = std::ceil(H[j]);
         printf("H: %.1f\n", H[j]);
-        for(int d = 0; d < NumThreshold; d++){
-            printf("threshold: %.3f\n", q[d][j]);
+        for (int d=0; d<NumThreshold; d++) {
+            printf("threshold %d %d : %.3f\n", d, j, q[d][j]);
         }
     }
 
@@ -837,7 +849,7 @@ int main() {
 
     double matching_rep = 0;
     for (int l=0; l<NumMacro; l++) {
-        configuration();
+        
 
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {
@@ -890,7 +902,10 @@ int main() {
             int demand_index = 0;
 
             for (int j=0; j<NumConstraint; j++) {
-                for (int d=0; d<NumThreshold; d++) BeRF_Z[i][j][d] = -2;
+                for (int d=0; d<NumThreshold; d++) {
+                    BeRF_Z[i][j][d] = -2;
+                    // printf("threshold %d %d : %.3f\n", d, j, q[d][j]);
+                }
             }
         }
 
@@ -917,13 +932,45 @@ int main() {
         // MBeRF section
         correct_mberf = 1;
 
-        // // first pass
-        // T_index[0][0][0] = 0; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 0; 
-        // T_index[0][4][0] = 1; T_index[0][5][0] = 1; T_index[0][6][0] = 1; T_index[0][7][0] = 1;
+        for (int p=0; p<NumPass; p++) {
+            if (p = 0) {
+                for (int j=0; j<NumConstraint; j++) {
+                    for (int d=0; d<NumThreshold; d++) {
+                        if (d == 5 | d == 10 | d == 15 | d == 20 | d == 25) {
+                            T_index[p][d][j] = 1;
+                        }
+                        else {
+                            T_index[p][d][j] = 0;
+                        }
+                    }
+                }
+            }
+            if (p = 1) {
+                for (int j=0; j<NumConstraint; j++) {
+                    for (int d=0; d<NumThreshold; d++) {
+                        if (d == 0 | d == 1 | d == 2 | d == 3 | d == 4) {
+                            T_index[p][d][j] = 1;
+                        }
+                        else {
+                            T_index[p][d][j] = 0;
+                        }
+                    }
+                }
+            }
+        }
 
-        // // second pass
-        // T_index[1][0][0] = 1; T_index[1][1][0] = 1; T_index[1][2][0] = 1; T_index[1][3][0] = 1;
-        // T_index[1][4][0] = 0; T_index[1][5][0] = 0; T_index[1][6][0] = 0; T_index[1][7][0] = 0;
+        // // first pass
+        // T_index[0][0][0] = 0; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 1; 
+        // T_index[0][0][1] = 0; T_index[0][1][1] = 0; T_index[0][2][1] = 0; T_index[0][3][1] = 1; 
+        // // T_index[0][4][0] = 1; T_index[0][5][0] = 1; T_index[0][6][0] = 1; T_index[0][7][0] = 1;
+
+        // // // second pass
+        // T_index[1][0][0] = 0; T_index[1][1][0] = 1; T_index[1][2][0] = 0; T_index[1][3][0] = 0;
+        // T_index[1][0][1] = 0; T_index[1][1][1] = 1; T_index[1][2][1] = 0; T_index[1][3][1] = 0;
+        // // T_index[1][4][0] = 0; T_index[1][5][0] = 0; T_index[1][6][0] = 0; T_index[1][7][0] = 0;
+
+        // T_index[2][0][0] = 1; T_index[2][1][0] = 0; T_index[2][2][0] = 0; T_index[2][3][0] = 0;
+        // T_index[2][0][1] = 1; T_index[2][1][1] = 0; T_index[2][2][1] = 0; T_index[2][3][1] = 0;
 
         // // first pass
         // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1; 
@@ -942,29 +989,27 @@ int main() {
         // T_index[1][4][0] = 1; T_index[1][5][0] = 1; T_index[1][6][0] = 0; T_index[1][7][0] = 0;
 
         //all thresholds for 2 constraints. This is for 4 thresholds.
-        T_index[0][0][0] = 0; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 0; T_index[0][4][0] = 0; T_index[0][5][0] = 0; T_index[0][6][0] = 1;
-        T_index[0][0][1] = 0; T_index[0][1][1] = 0; T_index[0][2][1] = 0; T_index[0][3][1] = 0; T_index[0][4][1] = 0; T_index[0][5][1] = 0; T_index[0][6][1] = 1;
+        // T_index[0][0][0] = 0; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 0; T_index[0][4][0] = 0; T_index[0][5][0] = 0; T_index[0][6][0] = 1;
+        // T_index[0][0][1] = 0; T_index[0][1][1] = 0; T_index[0][2][1] = 0; T_index[0][3][1] = 0; T_index[0][4][1] = 0; T_index[0][5][1] = 0; T_index[0][6][1] = 1;
 
-        T_index[1][0][0] = 0; T_index[1][1][0] = 0; T_index[1][2][0] = 0; T_index[1][3][0] = 0; T_index[1][4][0] = 0; T_index[1][5][0] = 1; T_index[1][6][0] = 0;
-        T_index[1][0][1] = 0; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 0; T_index[1][4][1] = 0; T_index[1][5][1] = 1; T_index[1][6][1] = 0;
+        // T_index[1][0][0] = 1; T_index[1][1][0] = 1; T_index[1][2][0] = 0; T_index[1][3][0] = 0; T_index[1][4][0] = 0; T_index[1][5][0] = 1; T_index[1][6][0] = 0;
+        // T_index[1][0][1] = 1; T_index[1][1][1] = 1; T_index[1][2][1] = 0; T_index[1][3][1] = 0; T_index[1][4][1] = 0; T_index[1][5][1] = 1; T_index[1][6][1] = 0;
 
-        T_index[2][0][0] = 0; T_index[2][1][0] = 0; T_index[2][2][0] = 0; T_index[2][3][0] = 0; T_index[2][4][0] = 1; T_index[2][5][0] = 0; T_index[2][6][0] = 0;
-        T_index[2][0][1] = 0; T_index[2][1][1] = 0; T_index[2][2][1] = 0; T_index[2][3][1] = 0; T_index[2][4][1] = 1; T_index[2][5][1] = 0; T_index[2][6][1] = 0;
+        // // T_index[2][0][0] = 0; T_index[2][1][0] = 0; T_index[2][2][0] = 0; T_index[2][3][0] = 0; T_index[2][4][0] = 1; T_index[2][5][0] = 0; T_index[2][6][0] = 0;
+        // T_index[2][0][1] = 0; T_index[2][1][1] = 0; T_index[2][2][1] = 0; T_index[2][3][1] = 0; T_index[2][4][1] = 1; T_index[2][5][1] = 0; T_index[2][6][1] = 0;
         
-        T_index[3][0][0] = 0; T_index[3][1][0] = 0; T_index[3][2][0] = 0; T_index[3][3][0] = 1; T_index[3][4][0] = 0; T_index[3][5][0] = 0; T_index[3][6][0] = 0;
-        T_index[3][0][1] = 0; T_index[3][1][1] = 0; T_index[3][2][1] = 0; T_index[3][3][1] = 1; T_index[3][4][1] = 0; T_index[3][5][1] = 0; T_index[3][6][1] = 0;
+        // T_index[3][0][0] = 0; T_index[3][1][0] = 0; T_index[3][2][0] = 0; T_index[3][3][0] = 1; T_index[3][4][0] = 0; T_index[3][5][0] = 0; T_index[3][6][0] = 0;
+        // T_index[3][0][1] = 0; T_index[3][1][1] = 0; T_index[3][2][1] = 0; T_index[3][3][1] = 1; T_index[3][4][1] = 0; T_index[3][5][1] = 0; T_index[3][6][1] = 0;
 
-        T_index[4][0][0] = 0; T_index[4][1][0] = 0; T_index[4][2][0] = 1; T_index[4][3][0] = 0; T_index[4][4][0] = 0; T_index[4][5][0] = 0; T_index[4][6][0] = 0;
-        T_index[4][0][1] = 0; T_index[4][1][1] = 0; T_index[4][2][1] = 1; T_index[4][3][1] = 0; T_index[4][4][1] = 0; T_index[4][5][1] = 0; T_index[4][6][1] = 0;
+        // T_index[4][0][0] = 0; T_index[4][1][0] = 0; T_index[4][2][0] = 1; T_index[4][3][0] = 0; T_index[4][4][0] = 0; T_index[4][5][0] = 0; T_index[4][6][0] = 0;
+        // T_index[4][0][1] = 0; T_index[4][1][1] = 0; T_index[4][2][1] = 1; T_index[4][3][1] = 0; T_index[4][4][1] = 0; T_index[4][5][1] = 0; T_index[4][6][1] = 0;
 
-        T_index[5][0][0] = 0; T_index[5][1][0] = 1; T_index[5][2][0] = 0; T_index[5][3][0] = 0; T_index[5][4][0] = 0; T_index[5][5][0] = 0; T_index[5][6][0] = 0;
-        T_index[5][0][1] = 0; T_index[5][1][1] = 1; T_index[5][2][1] = 0; T_index[5][3][1] = 0; T_index[5][4][1] = 0; T_index[5][5][1] = 0; T_index[5][6][1] = 0;
+        // T_index[5][0][0] = 0; T_index[5][1][0] = 1; T_index[5][2][0] = 0; T_index[5][3][0] = 0; T_index[5][4][0] = 0; T_index[5][5][0] = 0; T_index[5][6][0] = 0;
+        // T_index[5][0][1] = 0; T_index[5][1][1] = 1; T_index[5][2][1] = 0; T_index[5][3][1] = 0; T_index[5][4][1] = 0; T_index[5][5][1] = 0; T_index[5][6][1] = 0;
 
-        T_index[6][0][0] = 1; T_index[6][1][0] = 0; T_index[6][2][0] = 0; T_index[6][3][0] = 0; T_index[6][4][0] = 0; T_index[6][5][0] = 0; T_index[6][6][0] = 0;
-        T_index[6][0][1] = 1; T_index[6][1][1] = 0; T_index[6][2][1] = 0; T_index[6][3][1] = 0; T_index[6][4][1] = 0; T_index[6][5][1] = 0; T_index[6][6][1] = 0;
+        // T_index[6][0][0] = 1; T_index[6][1][0] = 0; T_index[6][2][0] = 0; T_index[6][3][0] = 0; T_index[6][4][0] = 0; T_index[6][5][0] = 0; T_index[6][6][0] = 0;
+        // T_index[6][0][1] = 1; T_index[6][1][1] = 0; T_index[6][2][1] = 0; T_index[6][3][1] = 0; T_index[6][4][1] = 0; T_index[6][5][1] = 0; T_index[6][6][1] = 0;
         
-
-
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {
                 for (int d=0; d<NumThreshold; d++) MBeRF_Z[i][j][d] = -2;
@@ -999,24 +1044,24 @@ int main() {
     //    printf("%d\t%d\t%d\t%d\n", MRF_Z[0][1][0], MRF_Z[0][1][1], MRF_Z[0][1][2], MRF_Z[0][1][3]);
 
         mberf2(1);
-        mberf2(2);
-        mberf2(3);
-        mberf2(4);
-        mberf2(5);
-        mberf2(6);
+        // mberf2(2);
+        // mberf2(3);
+        // mberf2(4);
+        // mberf2(5);
+        // mberf2(6);
         
         // for (int i=0; i<NumSys; i++) {
-        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", BeRF_Z[i][0][0], BeRF_Z[i][0][1], BeRF_Z[i][0][2], BeRF_Z[i][0][3]);
-        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", MBeRF_Z[i][0][0], MBeRF_Z[i][0][1], MBeRF_Z[i][0][2], MBeRF_Z[i][0][3]);
-        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", BeRF_Z[i][1][0], BeRF_Z[i][1][1], BeRF_Z[i][1][2], BeRF_Z[i][1][3]);
-        //     printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", MBeRF_Z[i][1][0], MBeRF_Z[i][1][1], MBeRF_Z[i][1][2], MBeRF_Z[i][1][3]);
+        //     printf("system %d cons1 : %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i, BeRF_Z[i][0][0], BeRF_Z[i][0][1], BeRF_Z[i][0][2], BeRF_Z[i][0][3]);
+        //     printf("system %d cons1 : %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i, MBeRF_Z[i][0][0], MBeRF_Z[i][0][1], MBeRF_Z[i][0][2], MBeRF_Z[i][0][3]);
+        //     printf("system %d cons2 : %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i, BeRF_Z[i][1][0], BeRF_Z[i][1][1], BeRF_Z[i][1][2], BeRF_Z[i][1][3]);
+        //     printf("system %d cons2 : %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i, MBeRF_Z[i][1][0], MBeRF_Z[i][1][1], MBeRF_Z[i][1][2], MBeRF_Z[i][1][3]);
         // }
 
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {
                 for (int d=0; d<NumThreshold; d++) {
-                //    for (int p=0; p<NumPass; p++) {
-                //        if (T_index[p][d][j] == 1) {
+                   for (int p=0; p<NumPass; p++) {
+                       if (T_index[p][d][j] == 1) {
                             if (system_true_value[i][j] <= (q[d][j] / (q[d][j] + (1 - q[d][j]) * Theta))) {
                                 if (MBeRF_Z[i][j][d] == 1) correct_mberf *= 1;
                                 else {correct_mberf *= 0;}
@@ -1024,8 +1069,8 @@ int main() {
                                 if (MBeRF_Z[i][j][d] == 0) correct_mberf *= 1;
                                 else correct_mberf *= 0;
                             }
-                //        }
-                //    }
+                       }
+                   }
                 }
             }
         }
@@ -1038,7 +1083,10 @@ int main() {
                 for (int d=0; d<NumThreshold; d++) {
                     for (int p=0; p<NumPass; p++) {
                         if (T_index[p][d][j] == 1) {
-                            if (BeRF_Z[i][j][d] != MBeRF_Z[i][j][d]) match_decision_indicator *= 0;
+                            if (BeRF_Z[i][j][d] != MBeRF_Z[i][j][d]) {
+                                match_decision_indicator *= 0;
+                                // printf("system %d cons %d threshold %d %dth pass is not matched\n", i+1, j+1, d+1, p+1);
+                            }
                         }
                     }
                 }

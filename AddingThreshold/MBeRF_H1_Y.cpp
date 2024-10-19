@@ -24,13 +24,12 @@ using namespace std;
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 1000
+#define NumMacro 10000
 #define NumSys	1
-#define NumConstraint	1
+#define NumConstraint	2
 #define NumThreshold	4
 #define NumPass 2
-#define prob   0.15
-#define Theta   1.2
+#define Theta   1.5
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -75,6 +74,7 @@ int system_info[NumSys];
 
 double observations[NumSys][NumConstraint];
 
+double prob[NumConstraint];
 double H[NumConstraint];
 double dummies[NumConstraint][NumThreshold];
 double qL[NumConstraint][NumThreshold];
@@ -567,12 +567,12 @@ double normal(double rmean, double rvar, int sys_index, int constraint_index)
 
 double generate_Bernoulli(int numConstraint, int sys_index, int constraint_index) {
 
-    if (NumConstraint < 1.5) {
+    // if (NumConstraint < 1.5) {
         for (int i = 0; i < NumSys; i++) {
             double prn = MRG32k3a(sys_index, constraint_index);
             for (int j = 0; j < numConstraint; j++) {
                 observations[i][j] = 0;
-                if (MRG32k3a_y() <= prob) {
+                if (MRG32k3a_y() <= prob[j]) {
                     observations[i][j] = 1;
                 }
                 //double prn = MRG32k3a();
@@ -585,69 +585,70 @@ double generate_Bernoulli(int numConstraint, int sys_index, int constraint_index
             }
             return 0;
         }
-    }
+    // }
 
-    else if (NumConstraint > 1.5) {
-        std::vector<std::vector<double>> C(numConstraint, std::vector<double>(numConstraint));
+    // else if (NumConstraint > 1.5) {
+    //     std::vector<std::vector<double>> C(numConstraint, std::vector<double>(numConstraint));
 
-        for (int i = 0; i < numConstraint; i++) {
-            for (int j = 0; j < numConstraint; j++) {
-                C[i][j] = chol_matrix[0][i][j];
-                //printf("C: % .2f\n", C[i][j]);
-            }
-        }
+    //     for (int i = 0; i < numConstraint; i++) {
+    //         for (int j = 0; j < numConstraint; j++) {
+    //             C[i][j] = chol_matrix[0][i][j];
+    //             //printf("C: % .2f\n", C[i][j]);
+    //         }
+    //     }
 
-        for (int i = 0; i < NumSys; i++) {
-            std::vector<double> std_normal(numConstraint);
-            std::vector<double> correlated_normal(numConstraint);
-            std::vector<int> successes(numConstraint);
-            std::vector<double> x_value(numConstraint);
+    //     for (int i = 0; i < NumSys; i++) {
+    //         std::vector<double> std_normal(numConstraint);
+    //         std::vector<double> correlated_normal(numConstraint);
+    //         std::vector<int> successes(numConstraint);
+    //         std::vector<double> x_value(numConstraint);
 
-            for (int j = 0; j < numConstraint; j++){
-                successes[j] = 0;
-                boost::math::normal_distribution<> standard_normal;
-                x_value[j] = boost::math::quantile(standard_normal, prob);
-            }
+    //         for (int j = 0; j < numConstraint; j++){
+    //             successes[j] = 0;
+    //             boost::math::normal_distribution<> standard_normal;
+    //             x_value[j] = boost::math::quantile(standard_normal, prob[j]);
+    //         }
 
-            for (int l = 0; l < numConstraint; l++) {
-                    std_normal[l] = normal(0, 1, sys_index, constraint_index);
-            }
+    //         for (int l = 0; l < numConstraint; l++) {
+    //                 std_normal[l] = normal(0, 1, sys_index, constraint_index);
+    //         }
 
-            double prn = MRG32k3a(sys_index, constraint_index);
-            for (int j = 0; j < numConstraint; j++) {
+    //         double prn = MRG32k3a(sys_index, constraint_index);
+    //         for (int j = 0; j < numConstraint; j++) {
 
-                correlated_normal[j] = 0;
-                for (int m = 0; m < numConstraint; m++) {
-                    correlated_normal[j] += C[j][m] * std_normal[m];
-                }
+    //             correlated_normal[j] = 0;
+    //             for (int m = 0; m < numConstraint; m++) {
+    //                 correlated_normal[j] += C[j][m] * std_normal[m];
+    //             }
 
-                if (correlated_normal[j] < x_value[j]) {
-                    successes[j]++;
-                }
+    //             if (correlated_normal[j] < x_value[j]) {
+    //                 successes[j]++;
+    //             }
 
-                //double prn = MRG32k3a();
-                for (int d = 0; d < NumThreshold; d++) { 
-                    dummies[j][d] = 0;
-                    if (prn <= q[d][j]) {
-                        dummies[j][d] = 1;
-                    }
-                }
-            }
+    //             //double prn = MRG32k3a();
+    //             for (int d = 0; d < NumThreshold; d++) { 
+    //                 dummies[j][d] = 0;
+    //                 if (prn <= q[d][j]) {
+    //                     dummies[j][d] = 1;
+    //                 }
+    //             }
+    //         }
 
-            for (int j = 0; j < numConstraint; j++) {
-                observations[i][j] = static_cast<double>(successes[j]);
-                //printf("obs: % .2f\n", observations[i][j]);
-            }
-            return 0;
-        }
-    }
+    //         for (int j = 0; j < numConstraint; j++) {
+    //             observations[i][j] = static_cast<double>(successes[j]);
+    //             //printf("obs: % .2f\n", observations[i][j]);
+    //         }
+    //         return 0;
+    //     }
+    // }
+    return 0;
 }
 
 double configuration(void) {
 
     for (int i=0; i<NumSys; i++) {
 		for (int j=0; j<NumConstraint; j++) {
-			mean_value[i][j] = prob;
+			mean_value[i][j] = prob[j];
             // var_value[i][j] = 1;
 		}
 	}
@@ -704,14 +705,18 @@ int main() {
     outfile = NULL;
     outfile = fopen("H1vsBeRF","a");
 
-    q[0][0] = Lower(prob, Theta*1.5); q[1][0] = Lower(prob, Theta); q[2][0] = Upper(prob, Theta); q[3][0] = Upper(prob, Theta*1.5);
+    prob[0] = 0.15;
+    prob[1] = 0.15;
+
+    q[0][0] = Lower(prob[0], Theta*1.5); q[1][0] = Lower(prob[0], Theta); q[2][0] = Upper(prob[0], Theta); q[3][0] = Upper(prob[0], Theta*1.5);
+    q[0][1] = Lower(prob[1], Theta*1.5); q[1][1] = Lower(prob[1], Theta); q[2][1] = Upper(prob[1], Theta); q[3][1] = Upper(prob[1], Theta*1.5);
 
     double alpha = 0.05;
     double beta = (1-pow(1-alpha, (double) 1/NumSys))/NumConstraint;    // independant systems
     double beta_prime = beta/2;
 
     for(int j = 0; j < NumConstraint; j++){
-        H[j] = (log ((1/beta) - 1))/(log (Theta));
+        H[j] = (log ((1/beta_prime) - 1))/(log (Theta));
         H[j] = std::ceil(H[j]);
         printf("H: %.1f\n", H[j]);
         for(int d = 0; d < NumThreshold; d++){
@@ -771,7 +776,7 @@ int main() {
 
         s10_y = init_s10_y, s11_y = init_s11_y, s12_y = init_s12_y, s20_y = init_s20_y, s21_y = init_s21_y, s22_y = init_s22_y;
 
-        if (l == 0) printf("%.f\t%.f\t%.f\t%.f\t%.f\t%.f\n", s10_y, s11_y, s12_y, s20_y, s21_y, s22_y);
+        // if (l == 0) printf("%.f\t%.f\t%.f\t%.f\t%.f\t%.f\n", s10_y, s11_y, s12_y, s20_y, s21_y, s22_y);
 
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {
@@ -802,14 +807,60 @@ int main() {
         // MBeRF section
         double correct_mberf = 1;
 
+        // // first pass
+        // T_index[0][0][0] = 1; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 1;  // T_index[NumPass][NumThreshold][NumConstraint]
+        // T_index[0][0][1] = 1; T_index[0][1][1] = 0; T_index[0][2][1] = 0; T_index[0][3][1] = 1;
+        // //T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
+        // // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1;
+
+        // // second pass
+        // T_index[1][0][0] = 0; T_index[1][1][0] = 1; T_index[1][2][0] = 1; T_index[1][3][0] = 0;
+        // T_index[1][0][1] = 0; T_index[1][1][1] = 1; T_index[1][2][1] = 1; T_index[1][3][1] = 0;
+        // //T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+
         // first pass
-        T_index[0][0][0] = 0; T_index[0][1][0] = 1; T_index[0][2][0] = 0; T_index[0][3][0] = 1;
-        // T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
+        T_index[0][0][0] = 0; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 0;  // T_index[NumPass][NumThreshold][NumConstraint]
+        T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
+        //T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
         // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1;
 
         // second pass
-        T_index[1][0][0] = 1; T_index[1][1][0] = 0; T_index[1][2][0] = 1; T_index[1][3][0] = 0;
+        T_index[1][0][0] = 1; T_index[1][1][0] = 0; T_index[1][2][0] = 0; T_index[1][3][0] = 1;
+        T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+        //T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+
+        // // first pass
+        // T_index[0][0][0] = 0; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 0;  // T_index[NumPass][NumThreshold][NumConstraint]
+        // T_index[0][0][1] = 1; T_index[0][1][1] = 0; T_index[0][2][1] = 0; T_index[0][3][1] = 1;
+        // //T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
+        // // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1;
+
+        // // second pass
+        // T_index[1][0][0] = 1; T_index[1][1][0] = 0; T_index[1][2][0] = 0; T_index[1][3][0] = 1;
+        // T_index[1][0][1] = 0; T_index[1][1][1] = 1; T_index[1][2][1] = 1; T_index[1][3][1] = 0;
+        // //T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+
+        //         // first pass
+        // T_index[0][0][0] = 1; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 1;  // T_index[NumPass][NumThreshold][NumConstraint]
+        // T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
+        // //T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
+        // // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1;
+
+        // // second pass
+        // T_index[1][0][0] = 0; T_index[1][1][0] = 1; T_index[1][2][0] = 1; T_index[1][3][0] = 0;
         // T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+        // // T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+
+        // // first pass
+        // T_index[0][0][0] = 1; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 1;  // T_index[NumPass][NumThreshold][NumConstraint]
+        // T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
+        // //T_index[0][0][1] = 0; T_index[0][1][1] = 1; T_index[0][2][1] = 1; T_index[0][3][1] = 0;
+        // // T_index[0][0][0] = 1; T_index[0][1][0] = 1; T_index[0][2][0] = 1; T_index[0][3][0] = 1;
+
+        // // second pass
+        // T_index[1][0][0] = 0; T_index[1][1][0] = 1; T_index[1][2][0] = 1; T_index[1][3][0] = 0;
+        // T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
+        // //T_index[1][0][1] = 1; T_index[1][1][1] = 0; T_index[1][2][1] = 0; T_index[1][3][1] = 1;
 
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {
@@ -829,7 +880,7 @@ int main() {
         }
         s10_y = init_s10_y, s11_y = init_s11_y, s12_y = init_s12_y, s20_y = init_s20_y, s21_y = init_s21_y, s22_y = init_s22_y;
 
-        if (l == 0) printf("%.f\t%.f\t%.f\t%.f\t%.f\t%.f\n", s10[0][0], s11[0][0], s12[0][0],s20[0][0], s21[0][0], s22[0][0]);
+        // if (l == 0) printf("%.f\t%.f\t%.f\t%.f\t%.f\t%.f\n", s10[0][0], s11[0][0], s12[0][0],s20[0][0], s21[0][0], s22[0][0]);
 
         mberf1(0);
 //        printf("%d\t%d\t%d\t%d\n", MRF_Z[0][0][0], MRF_Z[0][0][1], MRF_Z[0][0][2], MRF_Z[0][0][3]);
@@ -876,7 +927,7 @@ int main() {
 
         mrf_total_rep_per_macro = 0;
         for (int p=0; p<NumPass; p++) mrf_total_rep_per_macro += mberf_per_macro[p];
-        printf("%.5f\t%.5f\t%d\n", berf_per_macro, mrf_total_rep_per_macro, lastthershold);
+        // printf("%.5f\t%.5f\t%d\n", berf_per_macro, mrf_total_rep_per_macro, lastthershold);
         write_up();
         if (mrf_total_rep_per_macro == berf_per_macro) matching_rep += 1;
 

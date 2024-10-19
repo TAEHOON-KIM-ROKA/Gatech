@@ -9,16 +9,18 @@
     "tasks": [
         {
             "label": "save and compile for C++",
-            "command": "g++",
+            "command": "C:/mingw64/bin/g++.exe",
             "args": [
-                "${file}",
+                "-fdiagnostics-color=always",
                 "-g",
+                "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
                 "-I",
                 "C:/Users/USER/boost_1_82_0",
                 "-L",
-                "C:/Users/USER/boost_1_82_0/stage/lib"
+                "C:/Users/USER/boost_1_82_0/stage/lib",
+                "-lstdc++"
             ],
             "group": "build",
             "problemMatcher": {
@@ -70,13 +72,13 @@
                 "-I",
                 "C:/Users/USER/boost_1_82_0",
                 "-L",
-                "C:/Users/USER/boost_1_82_0/stage/lib"
+                "C:/Users/USER/boost_1_82_0/stage/lib",
             ]
         },
         {
             "type": "cppbuild",
             "label": "C/C++: gcc.exe build active file",
-            "command": "C:/mingw64/bin/gcc.exe",
+            "command": "C:/mingw64/bin/g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
