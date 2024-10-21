@@ -20,7 +20,7 @@
 #define NumMacro 100
 #define NumSys	77
 #define NumConstraint	2
-#define NumThreshold	4
+#define NumThreshold	26
 #define Num_s 20
 #define Num_S 20
 #define NumBatch    32
@@ -275,44 +275,44 @@ double configuration(void) {
         }
     }
 
-    for (int i=0; i<NumSys; i++) {
-        for (int j=0; j<NumConstraint; j++) {
-            ON[i][j] = 1;
+    // for (int i=0; i<NumSys; i++) {
+    //     for (int j=0; j<NumConstraint; j++) {
+    //         ON[i][j] = 1;
 
-            for (int d=0; d<NumThreshold; d++) {
-                ON_l[i][j][d] = 1;
-            }
-        }
-    }
+    //         for (int d=0; d<NumThreshold; d++) {
+    //             ON_l[i][j][d] = 1;
+    //         }
+    //     }
+    // }
 
     
-    if (Theta == 1.5){
-      for (int j=0; j<NumConstraint; j++) {  
-        epsilon[j] = 0.004118;  // odd ratio = 1.5
-      }
-    }
-    else if (Theta == 1.2){
-      for (int j=0; j<NumConstraint; j++) {
-        epsilon[j] = 0.001814;  // odd ratio = 1.2
-      }
-    }
-  // set threshold value. The smallest first.
-    q[0][0] = 0.01;
-    q[0][1] = 0.05;
-    q[0][2] = 0.1;
-    q[0][3] = 0.2;
+  //   if (Theta == 1.5){
+  //     for (int j=0; j<NumConstraint; j++) {  
+  //       epsilon[j] = 0.004118;  // odd ratio = 1.5
+  //     }
+  //   }
+  //   else if (Theta == 1.2){
+  //     for (int j=0; j<NumConstraint; j++) {
+  //       epsilon[j] = 0.001814;  // odd ratio = 1.2
+  //     }
+  //   }
+  // // set threshold value. The smallest first.
+  //   // q[0][0] = 0.01;
+  //   // q[0][1] = 0.05;
+  //   // q[0][2] = 0.1;
+  //   // q[0][3] = 0.2;
 
-    q[1][0] = 0.01;
-    q[1][1] = 0.05;
-    q[1][2] = 0.1;
-    q[1][3] = 0.2;
+  //   // q[1][0] = 0.01;
+  //   // q[1][1] = 0.05;
+  //   // q[1][2] = 0.1;
+  //   // q[1][3] = 0.2;
 
-    for (int j = 0; j < NumConstraint; j++) {
-        double UB = q[j][0]*Theta/(q[j][0]*Theta + (1-q[j][0]));
-        double LB = q[j][0]/(q[j][0] + (1-q[j][0])*Theta);
-        epsilon[j] = (UB-LB)/2;
-        //printf("epsilon: %.4f\n", epsilon[j]);
-    }
+  //   for (int j = 0; j < NumConstraint; j++) {
+  //       double UB = q[j][0]*Theta/(q[j][0]*Theta + (1-q[j][0]));
+  //       double LB = q[j][0]/(q[j][0] + (1-q[j][0])*Theta);
+  //       epsilon[j] = (UB-LB)/2;
+  //       //printf("epsilon: %.4f\n", epsilon[j]);
+  //   }
 
 	return 0;
 }
@@ -333,6 +333,7 @@ int main()
 {
     read_system_true_value();
     determine_true_feasibility();
+    
 
     for (int i=0; i<NumSys; i++){
         printf("sys %d_true: %.10f\t%.10f\n", i, system_true_value[i][0], system_true_value[i][1]);
@@ -341,13 +342,52 @@ int main()
     outfile = NULL;
     outfile = fopen("RF_2const_32_1.5_mock.out","a");
 
+    for (int d = 0; d < NumThreshold; d++) {
+        q[0][d] = 0.01 + 0.02 * (d);
+        q[1][d] = 0.01 + 0.02 * (d);
+    }
+
+    if (Theta == 1.5){
+      for (int j=0; j<NumConstraint; j++) {  
+        epsilon[j] = 0.004118;  // odd ratio = 1.5
+      }
+    }
+    else if (Theta == 1.2){
+      for (int j=0; j<NumConstraint; j++) {
+        epsilon[j] = 0.001814;  // odd ratio = 1.2
+      }
+    }
+  // set threshold value. The smallest first.
+    // q[0][0] = 0.01;
+    // q[0][1] = 0.05;
+    // q[0][2] = 0.1;
+    // q[0][3] = 0.2;
+
+    // q[1][0] = 0.01;
+    // q[1][1] = 0.05;
+    // q[1][2] = 0.1;
+    // q[1][3] = 0.2;
+
+    for (int j = 0; j < NumConstraint; j++) {
+        double UB = q[j][0]*Theta/(q[j][0]*Theta + (1-q[j][0]));
+        double LB = q[j][0]/(q[j][0] + (1-q[j][0])*Theta);
+        epsilon[j] = (UB-LB)/2;
+        //printf("epsilon: %.4f\n", epsilon[j]);
+    }
+
     double eta[NumConstraint];
+
     double beta = (1-pow(1-alpha, (double) 1/NumSys));
     //double beta = (double) alpha/NumSys;
     //printf("%.4f\n", beta);
     // if (NumThreshold == 1) beta = beta;
     beta = beta/(2*NumConstraint);
-    for (int j=0; j<NumConstraint; j++) eta[j] = 0.5*( pow( 2*beta,(double) -2/(Nnot-1)) - 1);
+    for (int j=0; j<NumConstraint; j++) {
+      eta[j] = 0.5*( pow( 2*beta,(double) -2/(Nnot-1)) - 1);
+        for (int d=0; d<NumThreshold; d++) {
+            printf("threshold %d %d : %.3f\n", j, d, q[j][d]);
+        }
+    }
 
     printf("%.4f\n", eta[0]);
     printf("%.4f\n", eta[1]);
@@ -356,9 +396,18 @@ int main()
 
     for (int l=0; l<NumMacro; l++) {
 
-        configuration();
         total_obs = 0;
         final_cd = 1;
+        configuration();
+
+      for (int i=0; i<NumSys; i++) {
+          for (int j=0; j<NumConstraint; j++) {
+              ON[i][j] = 1;
+              for (int d=0; d<NumThreshold; d++) {
+                  ON_l[i][j][d] = 1;
+              }
+          }
+      }
 
         double num_obs[NumSys][NumConstraint];
         double R[NumSys][NumConstraint];

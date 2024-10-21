@@ -933,10 +933,10 @@ int main() {
         correct_mberf = 1;
 
         for (int p=0; p<NumPass; p++) {
-            if (p = 0) {
+            if (p == 0) {
                 for (int j=0; j<NumConstraint; j++) {
                     for (int d=0; d<NumThreshold; d++) {
-                        if (d == 5 | d == 10 | d == 15 | d == 20 | d == 25) {
+                        if (d == 5 || d == 10 || d == 15 || d == 20 || d == 25) {
                             T_index[p][d][j] = 1;
                         }
                         else {
@@ -945,10 +945,10 @@ int main() {
                     }
                 }
             }
-            if (p = 1) {
+            if (p == 1) {
                 for (int j=0; j<NumConstraint; j++) {
                     for (int d=0; d<NumThreshold; d++) {
-                        if (d == 0 | d == 1 | d == 2 | d == 3 | d == 4) {
+                        if (d == 0 || d == 1 || d == 2 || d == 3 || d == 4) {
                             T_index[p][d][j] = 1;
                         }
                         else {
@@ -958,6 +958,14 @@ int main() {
                 }
             }
         }
+
+        // for (int p=0; p<NumPass; p++) {
+        //         for (int j=0; j<NumConstraint; j++) {
+        //             for (int d=0; d<NumThreshold; d++) {
+        //                 printf("%dth pass %dth constraint %dth threshold is %d\n", p+1, j+1, d+1, T_index[p][d][j]);
+        //             }
+        //         }
+        //     }
 
         // // first pass
         // T_index[0][0][0] = 0; T_index[0][1][0] = 0; T_index[0][2][0] = 0; T_index[0][3][0] = 1; 
