@@ -31,7 +31,7 @@ using namespace std;
 #define NumPass 2
 #define Num_s 20
 #define Num_S 20
-#define Theta   1.2
+#define Theta   1.5
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -44,8 +44,9 @@ using namespace std;
 
 double MRG32k3a(int sys_index, int constraint_index);  //Generate R(0,1) by L'ecuyer (1997)
 double MRG32k3a_y(int sys_index, int constraint_index);
+double MRG32k3a2(void);
 // choices of seeds for Generate R(0,1) by L'ecuyer (1997)
-//double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
+double  ss10 = 12345, ss11 = 12345, ss12 = 12345, ss20 = 12345, ss21 = 12345, ss22 = 12345;
 
 double s10[NumSys][NumConstraint];
 double s11[NumSys][NumConstraint];
@@ -64,10 +65,12 @@ double minfn(double x1, double x2);
 double maxfn(double x, double y);
 
 double normal(double rmean, double rvar, int sys_index, int constraint_index);
+double poisson2(double pmean);
 double configuration(void);
 int read_rand_seeds(void);
 double generate_one_obs(int demand_index, int sys_index, int constraint_index);
 int generate_demand(int sys_index, int constraint_index);
+// int generate_demand(void);
 int write_up(void);
 int read_system_true_value(void);
 int determine_true_feasibility(void);
@@ -277,7 +280,7 @@ int mberf2(int pass_index) {
 	}
 
     for (int i=0; i<NumSys; i++) {
-        int demand_index = 0;
+        int demand_index = 10000000;
 
         int surviveConstraint = 0;
         int surviveThreshold[NumConstraint];
@@ -569,6 +572,26 @@ double MRG32k3a_y(int sys_index, int constraint_index) //L'ecuyer Random number 
     else return ((p1 - p2) * norm)+0.000001;
 }
 
+double MRG32k3a2() //L'ecuyer Random number generator(0,1)
+{
+    long   k;
+    double p1, p2;
+    // double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
+
+    // Component 1
+    p1 = a12 * ss11 - a13n * ss10;
+    k = p1 / m1;   p1 -= k * m1;   if (p1 < 0.0) p1 += m1;
+    ss10 = ss11;   ss11 = ss12;   ss12 = p1;
+
+    // Component 2
+    p2 = a21 * ss22 - a23n * ss20;
+    k  = p2 / m2;  p2 -= k * m2;   if (p2 < 0.0) p2 += m2;
+    ss20 = ss21;   ss21 = ss22;   ss22 = p2;
+    // Combination
+    if (p1 <= p2) return ((p1 - p2 + m1) * norm);
+    else return ((p1 - p2) * norm)+0.000001;
+}
+
 double normal(double rmean, double rvar, int sys_index, int constraint_index)
 /* return normal random variable with mean rmean and variance rvar. */
 // this is modified for Fully Sequential Procedure with CRN
@@ -595,6 +618,23 @@ double poisson(double lam, int sys_index, int constraint_index) {
 
     while(1) {
         b=b*MRG32k3a(sys_index, constraint_index);
+        if( b<a) {
+            return i;
+            break;
+        }
+        i++;
+    }
+}
+
+double poisson2(double lam) {
+    double a, b;
+    int i;
+    a=exp(-lam);
+    b=1;
+    i=0;
+
+    while(1) {
+        b=b*MRG32k3a2();
         if( b<a) {
             return i;
             break;
@@ -656,13 +696,21 @@ int write_up(void) {
  return 0;
 }
 
-int generate_demand(int sys_index, int constraint_index) {
+int generate_demand() {
 
   for (int i=0; i<20000000; i++) {
-    demand_list[i] = poisson(demand_mean, sys_index, constraint_index);
+    demand_list[i] = poisson2(demand_mean);
   }
   return 0;
 }
+
+// int generate_demand(int sys_index, int constraint_index) {
+
+//   for (int i=0; i<20000000; i++) {
+//     demand_list[i] = poisson(demand_mean, sys_index, constraint_index);
+//   }
+//   return 0;
+// }
 
 double generate_one_obs(int demand_index, int sys_index, int constraint_index) {
 
@@ -676,8 +724,8 @@ double generate_one_obs(int demand_index, int sys_index, int constraint_index) {
 
   for(int i=0; i < 12; i++){
     Cost = 0;
-    Demand = poisson(demand_mean, sys_index, constraint_index);
-    //Demand = demand_list[demand_index+j];
+    // Demand = poisson(demand_mean, sys_index, constraint_index);
+    Demand = demand_list[demand_index+i];
 
     if( current_level < LittleS) {
       next_level = BigS;
@@ -850,6 +898,7 @@ int main() {
     double matching_rep = 0;
     for (int l=0; l<NumMacro; l++) {
         
+        generate_demand();
 
         for (int i=0; i<NumSys; i++) {
             for (int j=0; j<NumConstraint; j++) {

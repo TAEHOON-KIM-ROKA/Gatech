@@ -23,19 +23,19 @@ using namespace std;
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
 
-#define NumMacro 1000
+#define NumMacro 10000
 #define NumSys	1
-#define NumConstraint	1
+#define NumConstraint	2
 #define NumThreshold	2
 #define Correlation     0
 
 double adjusting(double n);
 double probability[NumConstraint] = {0.15   //probability for 1st constraint
-                                //    , 0.4    //probability for 2nd constraint
+                                   , 0.4    //probability for 2nd constraint
                                    };
 
-double theta[NumConstraint] = {1.5  //theta for 1st constraint
-                            //  , 1.2  //theta for 2nd constraint
+double theta[NumConstraint] = {1.2  //theta for 1st constraint
+                             , 1.2  //theta for 2nd constraint
                             };
 
 double Lower(double x, double y);
@@ -49,7 +49,7 @@ double q[NumConstraint][NumThreshold] = {
     
     // 1,2 constraint 2 thresholds case
      {Lower(probability[0], theta[0]), Upper(probability[0], theta[0])}   //thresholds for 1st constraint
-    // ,{Lower(probability[1], theta[1]), Upper(probability[1], theta[1])}   //thresholds for 2nd constraint
+    ,{Lower(probability[1], theta[1]), Upper(probability[1], theta[1])}   //thresholds for 2nd constraint
 
     // 1 constraint 12 thresholds case
     // {Lower(probability[0], theta[0]), Upper(probability[0], theta[0]),
@@ -277,6 +277,7 @@ double generate_Bernoulli(int numConstraint) {
             return 0;
         }
     }
+    return 0;
 }
 
 float correlationCoefficient(std::vector<double> X, std::vector<double> Y, int n)
@@ -477,7 +478,7 @@ int main()
         //H[j] = std::ceil(H[j]);
         printf("H: %.18f\n", H[j]);
     }
-    H[0] = 11;
+    // H[0] = 11;
     // H[1] = 11;
 
     for (int l = 0; l < NumMacro; l++) {    // iteration 시작. 
