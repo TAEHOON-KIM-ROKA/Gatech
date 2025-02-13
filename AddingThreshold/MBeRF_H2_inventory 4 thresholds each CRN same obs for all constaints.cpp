@@ -24,7 +24,7 @@ using namespace std;
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 10
+#define NumMacro 100
 #define NumSys	77
 #define NumConstraint	2
 #define NumThreshold	4
@@ -32,6 +32,7 @@ using namespace std;
 #define Num_s 20
 #define Num_S 20
 #define Theta   1.5
+#define CRN 0   //If you use CRN, then this is 1. Or this is 0.
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
 #define norm 2.328306549295728e-10
@@ -42,8 +43,6 @@ using namespace std;
 #define a21      527612.0
 #define a23n    1370589.0
 
-double MRG32k3a(int sys_index, int constraint_index);  //Generate R(0,1) by L'ecuyer (1997)
-double MRG32k3a_y(int sys_index, int constraint_index);
 // choices of seeds for Generate R(0,1) by L'ecuyer (1997)
 //double  s10 = 12345, s11 = 12345, s12 = 12345, s20 = 12345, s21 = 12345, s22 = 12345;
 double  ss10 = 12345, ss11 = 12345, ss12 = 12345, ss20 = 12345, ss21 = 12345, ss22 = 12345;
@@ -74,16 +73,20 @@ double s20_ya[NumSys];
 double s21_ya[NumSys];
 double s22_ya[NumSys];
 
+double MRG32k3a(int sys_index, int constraint_index);  //Generate R(0,1) by L'ecuyer (1997)
+double MRG32k3a_y(int sys_index, int constraint_index);
+double MRG32k3a2(void);
 double minfn(double x1, double x2);
 double maxfn(double x, double y);
-
 double normal(double rmean, double rvar, int sys_index, int constraint_index);
+double poisson2(double pmean);
 double configuration(void);
 int read_rand_seeds(void);
+// double generate_one_obs(int demand_index, int sys_index, int constraint_index);
 double generate_one_obs(int demand_index, int sys_index);
 int generate_demand(int sys_index, int constraint_index);
+// int generate_demand(void);
 int write_up(void);
-double poisson2(double pmean);
 int read_system_true_value(void);
 int determine_true_feasibility(void);
 
@@ -256,7 +259,7 @@ int mberf1(int pass_index) {
 
                 // if (v_UB[i][j] > v_LB[i][j]) {
                 if (ON[i][j] == 1) {
-                    
+                    // generate_one_obs(demand_index, i, j);
                     // printf("2nd obs: %.1f\n",single_obs[1]);
                     sumY[i][j] += single_obs[j];
                     for (int d = 0; d < NumThreshold; d++) {
@@ -296,7 +299,7 @@ int mberf2(int pass_index) {
 	}
 
     for (int i=0; i<NumSys; i++) {
-        int demand_index = 0;
+        int demand_index = 10000000;
 
         int surviveConstraint = 0;
         int surviveThreshold[NumConstraint];
@@ -373,6 +376,7 @@ int mberf2(int pass_index) {
             for (int j=0; j<NumConstraint; j++) {
 
                 if (v_UB[i][j] > v_LB[i][j]) {
+                    // generate_one_obs(demand_index, i, j);
                     sumY[i][j] += single_obs[j];
                     for (int d = 0; d < NumThreshold; d++) {
                         sumI[i][j][d] += dummies[j][d];
@@ -474,6 +478,7 @@ int berf(void) {
         generate_one_obs(demand_index, i);
 
         for (int j = 0; j < NumConstraint; j++) {
+            // generate_one_obs(demand_index, i, j);
             sumY[i][j] += single_obs[j];
             for (int d = 0; d < NumThreshold; d++) {
                 sumI[i][j][d] += dummies[j][d];
@@ -528,6 +533,7 @@ int berf(void) {
 
    			for (int j=0; j<NumConstraint; j++) {
                 if (ON[i][j] == 1) {
+                    // generate_one_obs(demand_index, i, j);
                     sumY[i][j] += single_obs[j];
                     for (int d = 0; d < NumThreshold; d++) {
                         sumI[i][j][d] += dummies[j][d];
@@ -569,28 +575,6 @@ double MRG32k3a(int sys_index, int constraint_index) //L'ecuyer Random number ge
     else return ((p1 - p2) * norm)+0.000001;
 }
 
-double MRG32k3a_y(int sys_index, int constraint_index) //L'ecuyer Random number generator(0,1)
-{
-    long   k;
-    double p1, p2;
-    // Component 1
-    p1 = a12 * s11_y[sys_index][constraint_index] - a13n * s10_y[sys_index][constraint_index];
-    k = p1 / m1;   p1 -= k * m1;   if (p1 < 0.0) p1 += m1;
-    s10_y[sys_index][constraint_index] = s11_y[sys_index][constraint_index];   
-    s11_y[sys_index][constraint_index] = s12_y[sys_index][constraint_index];
-    s12_y[sys_index][constraint_index] = p1;
-
-    // Component 2
-    p2 = a21 * s22_y[sys_index][constraint_index] - a23n * s20_y[sys_index][constraint_index];
-    k  = p2 / m2;  p2 -= k * m2;   if (p2 < 0.0) p2 += m2;
-    s20_y[sys_index][constraint_index] = s21_y[sys_index][constraint_index];   
-    s21_y[sys_index][constraint_index] = s22_y[sys_index][constraint_index];   
-    s22_y[sys_index][constraint_index] = p2;
-    // Combination
-    if (p1 <= p2) return ((p1 - p2 + m1) * norm);
-    else return ((p1 - p2) * norm)+0.000001;
-}
-
 double MRG32k3aa(int sys_index) //L'ecuyer Random number generator(0,1)
 {
     long   k;
@@ -609,6 +593,28 @@ double MRG32k3aa(int sys_index) //L'ecuyer Random number generator(0,1)
     s21a[sys_index] = s22a[sys_index];
     s22a[sys_index] = p2;
 
+    // Combination
+    if (p1 <= p2) return ((p1 - p2 + m1) * norm);
+    else return ((p1 - p2) * norm)+0.000001;
+}
+
+double MRG32k3a_y(int sys_index, int constraint_index) //L'ecuyer Random number generator(0,1)
+{
+    long   k;
+    double p1, p2;
+    // Component 1
+    p1 = a12 * s11_y[sys_index][constraint_index] - a13n * s10_y[sys_index][constraint_index];
+    k = p1 / m1;   p1 -= k * m1;   if (p1 < 0.0) p1 += m1;
+    s10_y[sys_index][constraint_index] = s11_y[sys_index][constraint_index];   
+    s11_y[sys_index][constraint_index] = s12_y[sys_index][constraint_index];
+    s12_y[sys_index][constraint_index] = p1;
+
+    // Component 2
+    p2 = a21 * s22_y[sys_index][constraint_index] - a23n * s20_y[sys_index][constraint_index];
+    k  = p2 / m2;  p2 -= k * m2;   if (p2 < 0.0) p2 += m2;
+    s20_y[sys_index][constraint_index] = s21_y[sys_index][constraint_index];   
+    s21_y[sys_index][constraint_index] = s22_y[sys_index][constraint_index];   
+    s22_y[sys_index][constraint_index] = p2;
     // Combination
     if (p1 <= p2) return ((p1 - p2 + m1) * norm);
     else return ((p1 - p2) * norm)+0.000001;
@@ -760,13 +766,21 @@ int write_up(void) {
  return 0;
 }
 
-int generate_demand(int sys_index, int constraint_index) {
+int generate_demand() {
 
   for (int i=0; i<20000000; i++) {
-    demand_list[i] = poisson(demand_mean, sys_index, constraint_index);
+    demand_list[i] = poisson2(demand_mean);
   }
   return 0;
 }
+
+// int generate_demand(int sys_index, int constraint_index) {
+
+//   for (int i=0; i<20000000; i++) {
+//     demand_list[i] = poisson(demand_mean, sys_index, constraint_index);
+//   }
+//   return 0;
+// }
 
 // double generate_one_obs(int demand_index, int sys_index, int constraint_index) {
 
@@ -780,8 +794,8 @@ int generate_demand(int sys_index, int constraint_index) {
 
 //   for(int i=0; i < 12; i++){
 //     Cost = 0;
-//     Demand = poisson(demand_mean, sys_index, constraint_index);
-//     //Demand = demand_list[demand_index+j];
+//     // Demand = poisson(demand_mean, sys_index, constraint_index);
+//     Demand = demand_list[demand_index+i];
 
 //     if( current_level < LittleS) {
 //       next_level = BigS;
@@ -841,8 +855,14 @@ double generate_one_obs(int demand_index, int sys_index) {
 
   for(int i=0; i < 12; i++){
     Cost = 0;
-    Demand = poisson2(demand_mean);
-    // Demand = demand_list[demand_index+i];
+
+    if (CRN == 0){
+        Demand = poisson2(demand_mean);
+    }
+    
+    else {
+        Demand = demand_list[demand_index+i];
+    }
 
     if( current_level < LittleS) {
       next_level = BigS;
@@ -890,6 +910,7 @@ double generate_one_obs(int demand_index, int sys_index) {
   return 0;
 }
 
+
 double configuration(void) {
 
 	// define system
@@ -906,7 +927,6 @@ double configuration(void) {
             }
         }
     }
-
 
     if (NumConstraint == 1){
         q[0][0] = 0.01; 
@@ -1003,6 +1023,9 @@ int main() {
 
     double matching_rep = 0;
     for (int l=0; l<NumMacro; l++) {
+        
+        generate_demand();
+
         for (int i=0; i<NumSys; i++) {
                 init_s10[i] = ((int) std::rand()) % ((4294967087 + 1));
                 init_s11[i] = ((int) std::rand()) % ((4294967087 + 1));

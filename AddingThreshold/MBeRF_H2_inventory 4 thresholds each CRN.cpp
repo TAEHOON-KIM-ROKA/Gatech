@@ -61,6 +61,19 @@ double s20_y[NumSys][NumConstraint];
 double s21_y[NumSys][NumConstraint];
 double s22_y[NumSys][NumConstraint];
 
+double s10a[NumSys];
+double s11a[NumSys];
+double s12a[NumSys];
+double s20a[NumSys];
+double s21a[NumSys];
+double s22a[NumSys];
+double s10_ya[NumSys];
+double s11_ya[NumSys];
+double s12_ya[NumSys];
+double s20_ya[NumSys];
+double s21_ya[NumSys];
+double s22_ya[NumSys];
+
 double minfn(double x1, double x2);
 double maxfn(double x, double y);
 
@@ -68,7 +81,8 @@ double normal(double rmean, double rvar, int sys_index, int constraint_index);
 double poisson2(double pmean);
 double configuration(void);
 int read_rand_seeds(void);
-double generate_one_obs(int demand_index, int sys_index, int constraint_index);
+// double generate_one_obs(int demand_index, int sys_index, int constraint_index);
+double generate_one_obs(int demand_index, int sys_index);
 int generate_demand(int sys_index, int constraint_index);
 // int generate_demand(void);
 int write_up(void);
@@ -550,6 +564,29 @@ double MRG32k3a(int sys_index, int constraint_index) //L'ecuyer Random number ge
     else return ((p1 - p2) * norm)+0.000001;
 }
 
+double MRG32k3aa(int sys_index) //L'ecuyer Random number generator(0,1)
+{
+    long   k;
+    double p1, p2;
+    // Component 1
+    p1 = a12 * s11a[sys_index] - a13n * s10a[sys_index];
+    k = p1 / m1;   p1 -= k * m1;   if (p1 < 0.0) p1 += m1;
+    s10a[sys_index] = s11a[sys_index];
+    s11a[sys_index] = s12a[sys_index];
+    s12a[sys_index] = p1;
+
+    // Component 2
+    p2 = a21 * s22a[sys_index] - a23n * s20a[sys_index];
+    k  = p2 / m2;  p2 -= k * m2;   if (p2 < 0.0) p2 += m2;
+    s20a[sys_index] = s21a[sys_index];
+    s21a[sys_index] = s22a[sys_index];
+    s22a[sys_index] = p2;
+
+    // Combination
+    if (p1 <= p2) return ((p1 - p2 + m1) * norm);
+    else return ((p1 - p2) * norm)+0.000001;
+}
+
 double MRG32k3a_y(int sys_index, int constraint_index) //L'ecuyer Random number generator(0,1)
 {
     long   k;
@@ -567,6 +604,28 @@ double MRG32k3a_y(int sys_index, int constraint_index) //L'ecuyer Random number 
     s20_y[sys_index][constraint_index] = s21_y[sys_index][constraint_index];   
     s21_y[sys_index][constraint_index] = s22_y[sys_index][constraint_index];   
     s22_y[sys_index][constraint_index] = p2;
+    // Combination
+    if (p1 <= p2) return ((p1 - p2 + m1) * norm);
+    else return ((p1 - p2) * norm)+0.000001;
+}
+
+double MRG32k3a_yy(int sys_index) //L'ecuyer Random number generator(0,1)
+{
+    long   k;
+    double p1, p2;
+    // Component 1
+    p1 = a12 * s11_ya[sys_index] - a13n * s10_ya[sys_index];
+    k = p1 / m1;   p1 -= k * m1;   if (p1 < 0.0) p1 += m1;
+    s10_ya[sys_index] = s11_ya[sys_index];   
+    s11_ya[sys_index] = s12_ya[sys_index];
+    s12_ya[sys_index] = p1;
+
+    // Component 2
+    p2 = a21 * s22_ya[sys_index] - a23n * s20_ya[sys_index];
+    k  = p2 / m2;  p2 -= k * m2;   if (p2 < 0.0) p2 += m2;
+    s20_ya[sys_index] = s21_ya[sys_index];   
+    s21_ya[sys_index] = s22_ya[sys_index];   
+    s22_ya[sys_index] = p2;
     // Combination
     if (p1 <= p2) return ((p1 - p2 + m1) * norm);
     else return ((p1 - p2) * norm)+0.000001;
@@ -772,6 +831,68 @@ double generate_one_obs(int demand_index, int sys_index, int constraint_index) {
   }
   return 0;
 }
+
+double generate_one_obs2(int demand_index, int sys_index) {
+
+  double total_cost =0;
+  double total_fail_prob = 0;
+  double num_stock_out_periods = 0;
+  double LittleS = system_value[sys_index][0];
+  int BigS = system_value[sys_index][1];
+  double current_level= BigS, next_level=0, Demand;
+  double Cost;
+
+  for(int i=0; i < 12; i++){
+    Cost = 0;
+    // Demand = poisson(demand_mean, sys_index, constraint_index);
+    Demand = demand_list[demand_index+i];
+
+    if( current_level < LittleS) {
+      next_level = BigS;
+      Cost = fixed_order_cost + order_cost * (BigS - current_level);
+    }
+    else next_level = current_level;
+
+    if( next_level - Demand >= 0) Cost += holding_cost * (next_level - Demand);
+    else  {
+      Cost += penalty_cost * (Demand - next_level);
+      total_fail_prob++;
+      num_stock_out_periods += 1;
+    }
+
+    current_level = next_level - Demand;
+    total_cost += Cost;
+  }
+
+//   printf("num stock outs: %.10f\n", num_stock_out_periods);
+
+  for (int j = 0; j < 1; j++) {
+    single_obs[0] = 0;
+    single_obs[1] = 0;
+    //printf("total cost: %.10f\n", total_cost);
+    if (total_cost > 1400) {
+      single_obs[0] = 1;
+    }
+
+    if (num_stock_out_periods >= 1) {
+      single_obs[1] = 1;
+    }
+  }
+
+  double prn = MRG32k3a_yy(sys_index);
+  for (int j = 0; j < NumConstraint; j++) {
+    // printf("2nd obs: %.10f\n", single_obs[1]); inventory에서 dummies만들때 Numconstraint가 아니라 1로 들어가있는거 있음.. 두시간동안 찾았네.
+    for (int d = 0; d < NumThreshold; d++) {
+      //double rn = MRG32k3a();
+      dummies[j][d] = 0;
+      if (prn <= q[d][j]) {
+        dummies[j][d] = 1;
+      }
+    }
+  }
+  return 0;
+}
+
 
 double configuration(void) {
 
