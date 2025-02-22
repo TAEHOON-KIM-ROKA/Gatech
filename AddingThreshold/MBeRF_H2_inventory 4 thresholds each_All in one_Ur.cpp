@@ -12,6 +12,8 @@
 #include <math.h>
 #include <cstdlib>
 #include <cmath>
+#include <chrono>
+#include <ctime>
 #include <random>
 #include <list>
 #include <boost/math/tools/roots.hpp>
@@ -20,13 +22,11 @@
 
 using namespace std;
 
-#include <random>
-
 // user inputs for N_0, number of macro-rep, number of systems, number of constraints
 // and number of thresholds of all constraint (if constraints have different number
 // of threshods, then input the maximum number of threshods and adjust the actual
 // number of thresholds each constraint later in the code)
-#define NumMacro 100
+#define NumMacro 1000
 #define NumSys	77
 #define NumConstraint	2
 #define NumThreshold	4
@@ -34,8 +34,8 @@ using namespace std;
 #define Num_s 20
 #define Num_S 20
 #define Theta   1.5
-#define CRN 1   //If you use CRN, then this is 1. Or this is 0.
-#define UR 1   //If you use U_r, then this is 1. Or this is 0.
+#define CRN 0   //If you use CRN, then this is 1. Or this is 0.
+#define UR 0   //If you use U_r, then this is 1. Or this is 0.
 #define DOMBERF 1   //If you do mberf, then this is 1. Or this is 0 (Only BeRF is implemented.)
 
 // inputs for Generate R(0,1) by L'ecuyer (1997)
@@ -145,8 +145,15 @@ double mberf_per_macro[NumPass];
 double correct_berf;
 double correct_mberf;
 double mrf_total_rep_per_macro;
+double mean_obs_berf;
+double variance_obs_berf;
+double se_obs_berf;
+double mean_obs_mberf;
+double variance_obs_mberf;
+double se_obs_mberf;
 
 FILE *outfile;
+FILE *outfile2;
 
 int mberf1(int pass_index) {
 
@@ -873,6 +880,13 @@ int write_up(void) {
  return 0;
 }
 
+int write_up_log(void) {
+
+    fprintf(outfile2, "%d\t%d\t%d\t%d\t%d\t%.1f\t%d\t%d\t%.5f\t%.5f\t%.5f\t%.5f\n", NumMacro, NumSys, NumConstraint, NumThreshold, NumPass, Theta, CRN, UR, mean_obs_berf, se_obs_berf, mean_obs_mberf, se_obs_mberf);
+   
+    return 0;
+}
+
 int generate_demand() {
 
   for (int i=0; i<20000000; i++) {
@@ -1093,6 +1107,8 @@ int main() {
 
     outfile = NULL;
     outfile = fopen("feasibiliy_MBeRF2_inventory","a");
+    outfile2 = NULL;
+    outfile2 = fopen("logfile","a");
 
     // for (int d = 0; d < NumThreshold; d++) {
     //     q[d][0] = 0.01 + 0.02 * (d);
@@ -1132,6 +1148,10 @@ int main() {
 
     berf_total = 0;
     mberf_total = 0;
+
+    std::vector<std::vector<double>> macro_num_obs(NumMacro, std::vector<double>(NumSys, 0.0));
+    std::vector<double> macro_num_obs_berf(NumMacro, 0.0);
+    std::vector<double> macro_num_obs_mberf(NumMacro, 0.0);
 
     double matching_rep = 0;
     for (int l=0; l<NumMacro; l++) {
@@ -1233,7 +1253,6 @@ int main() {
             }
         }
         if (correct_berf == 1) total_correct_berf += 1;
-
         //printf("%d\t%d\t%d\t%d\n", RF_Z[0][0][0], RF_Z[0][0][1], RF_Z[0][0][2], RF_Z[0][0][3]);
 
 
@@ -1406,6 +1425,9 @@ int main() {
         for (int p=0; p<NumPass; p++) mrf_total_rep_per_macro += mberf_per_macro[p];
         if (mrf_total_rep_per_macro == berf_per_macro) matching_rep += 1;
 
+        macro_num_obs_berf[l] = berf_per_macro;
+        macro_num_obs_mberf[l] = mrf_total_rep_per_macro;
+
         printf("%.1f\t%.5f\t%.1f\t%.5f\n", correct_berf, berf_per_macro, correct_mberf, mrf_total_rep_per_macro);
         
         write_up();
@@ -1416,7 +1438,19 @@ int main() {
     for (int j=0; j<NumConstraint; j++) {
         printf("Constraint %d: %.5f\n", j+1, BeRF_total_obs[j]/NumMacro);
     }
-    printf("BeRF total: %.5f\n", berf_total/NumMacro);
+
+    mean_obs_berf = berf_total/NumMacro;
+    variance_obs_berf = 0;
+    for (int l=0; l<NumMacro; l++) {
+        variance_obs_berf += (macro_num_obs_berf[l] - mean_obs_berf) * (macro_num_obs_berf[l] - mean_obs_berf);
+    }
+    variance_obs_berf /= (NumMacro-1);
+    se_obs_berf = 0;
+    se_obs_berf = std::sqrt(variance_obs_berf/NumMacro);
+
+    printf("BeRF total: %.5f\n", mean_obs_berf);
+    printf("BeRF total variance: %.5f\n", variance_obs_berf);
+    printf("BeRF total standard error: %.5f\n", se_obs_berf);
 
     if(DOMBERF==1){
         printf("MBeRF: %.5f\n", total_correct_mberf/NumMacro);
@@ -1428,11 +1462,24 @@ int main() {
             printf("Pass %d: %.5f\n", p+1, MBeRF_rep_by_pass[p]/NumMacro);
         }
 
-        printf("MBeRF total: %.5f\n", mberf_total/NumMacro);
+        mean_obs_mberf = mberf_total/NumMacro;
+        variance_obs_mberf = 0;
+        for (int l=0; l<NumMacro; l++) {
+            variance_obs_mberf += (macro_num_obs_mberf[l] - mean_obs_mberf) * (macro_num_obs_mberf[l] - mean_obs_mberf);
+        }
+        variance_obs_mberf /= (NumMacro-1);
+        se_obs_mberf = 0;
+        se_obs_mberf = std::sqrt(variance_obs_mberf/NumMacro);
+
+        printf("MBeRF total: %.5f\n", mean_obs_mberf);
+        printf("BeRF total variance: %.5f\n", variance_obs_mberf);
+        printf("BeRF total standard error: %.5f\n", se_obs_mberf);
 
         printf("Matching decision ratio: %.5f\n", total_match_decision/NumMacro);
         printf("Matching rep ratio: %.5f\n", matching_rep/NumMacro);
     }
+
+    write_up_log();
 
     return 0;
 }
