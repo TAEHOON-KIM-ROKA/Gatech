@@ -21,7 +21,7 @@
 // number of thresholds each constraint later in the code)
 #define alpha 0.05
 #define Nnot	20
-#define NumMacro 100
+#define NumMacro 5
 #define NumSys	77
 #define NumConstraint	2
 #define NumThreshold	4
@@ -90,8 +90,12 @@ double penalty_cost = 5;
 double total_obs;
 double final_cd;
 double batch_size = NumBatch;
+double mean_obs_rf;
+double variance_obs_rf;
+double se_obs_rf;
 
 FILE *outfile;
+FILE *outfile2;
 
 double MRG32k3a() //L'ecuyer Random number generator(0,1)
 {
@@ -195,6 +199,13 @@ int write_up(void) {
  fprintf(outfile, "%.1f\t%.5f\n", total_obs, final_cd);
 
  return 0;
+}
+
+int write_up_log(void) {
+
+  fprintf(outfile2, "%d\t%d\t%d\t%d\t%.1f\t%.5f\t%.5f\n", NumMacro, NumSys, NumConstraint, NumThreshold, Theta, mean_obs_rf, se_obs_rf);
+ 
+  return 0;
 }
 
 int generate_demand() {
@@ -344,7 +355,9 @@ int main()
     }
 
     outfile = NULL;
-    outfile = fopen("RF_2const_32_1.5_mock.out","a");
+    outfile = fopen("RF_inventory_2const.out","a");
+    outfile2 = NULL;
+    outfile2 = fopen("logfile_rf","a");
 
     // for (int d = 0; d < NumThreshold; d++) {
     //     q[0][d] = 0.01 + 0.02 * (d);
@@ -397,9 +410,12 @@ int main()
     printf("%.4f\n", eta[1]);
 
 	  double total_single_obs[NumConstraint];
+    double rf_total;
+    rf_total = 0;
 
     std::vector<std::vector<double>> macro_num_obs(NumMacro, std::vector<double>(NumSys, 0.0));
     std::vector<double> system_mean_obs(NumSys, 0.0);
+    std::vector<double> macro_num_obs_rf(NumMacro, 0.0);
 
     for (int l=0; l<NumMacro; l++) {
 
@@ -571,44 +587,58 @@ int main()
         //     printf("For system %d cosnt1: %d\t%d\t%d\t%d\n", i, Z[i][0][0], Z[i][0][1], Z[i][0][2], Z[i][0][3]);
         //     printf("For system %d const2: %d\t%d\t%d\t%d\n", i, Z[i][1][0], Z[i][1][1], Z[i][1][2], Z[i][1][3]);
         // }
+      macro_num_obs_rf[l] = total_obs*NumBatch;
 
-        printf("%.1f\t%.5f\n", total_obs*NumBatch, final_cd);
+      rf_total += total_obs*NumBatch;
 
-        write_up();
+      printf("%.1f\t%.5f\n", total_obs*NumBatch, final_cd);
+
+      write_up();
 
     }
 
+    // // 시스템별 평균 관찰 수 계산
+    // for (int i = 0; i < NumSys; i++) {
+    //     double total = 0.0;
+    //     for (int l = 0; l < NumMacro; l++) {
+    //         total += macro_num_obs[l][i];
+    //     }
+    //     system_mean_obs[i] = (NumBatch*total) / NumMacro;
+    // }
 
+    // // 통계량 계산
+    // double max_obs = *std::max_element(system_mean_obs.begin(), system_mean_obs.end());
+    // double min_obs = *std::min_element(system_mean_obs.begin(), system_mean_obs.end());
+    // double mean_obs = std::accumulate(system_mean_obs.begin(), system_mean_obs.end(), 0.0) / NumSys;
 
-    // 시스템별 평균 관찰 수 계산
-    for (int i = 0; i < NumSys; i++) {
-        double total = 0.0;
-        for (int l = 0; l < NumMacro; l++) {
-            total += macro_num_obs[l][i];
-        }
-        system_mean_obs[i] = (NumBatch*total) / NumMacro;
+    // double variance_obs = 0.0;
+    // for (const auto& obs : system_mean_obs) {
+    //     variance_obs += (obs - mean_obs) * (obs - mean_obs);
+    // }
+    // variance_obs /= NumSys;
+
+    // std::vector<double> sorted_obs = system_mean_obs;
+    // std::sort(sorted_obs.begin(), sorted_obs.end());
+    // double median_obs = (NumSys % 2 == 0) ? 
+    //                     (sorted_obs[NumSys / 2 - 1] + sorted_obs[NumSys / 2]) / 2.0 :
+    //                     sorted_obs[NumSys / 2];
+
+    // // 결과 출력
+    // printf("Max: %.2f, Min: %.2f, Mean: %.2f, Variance: %.2f, Median: %.2f\n",
+    //        max_obs, min_obs, mean_obs, variance_obs, median_obs);
+
+    mean_obs_rf = rf_total/NumMacro;
+    variance_obs_rf = 0;
+    for (int l=0; l<NumMacro; l++) {
+        variance_obs_rf += (macro_num_obs_rf[l] - mean_obs_rf) * (macro_num_obs_rf[l] - mean_obs_rf);
     }
+    variance_obs_rf /= (NumMacro-1);
+    se_obs_rf = 0;
+    se_obs_rf = std::sqrt(variance_obs_rf/NumMacro);
 
-    // 통계량 계산
-    double max_obs = *std::max_element(system_mean_obs.begin(), system_mean_obs.end());
-    double min_obs = *std::min_element(system_mean_obs.begin(), system_mean_obs.end());
-    double mean_obs = std::accumulate(system_mean_obs.begin(), system_mean_obs.end(), 0.0) / NumSys;
-
-    double variance_obs = 0.0;
-    for (const auto& obs : system_mean_obs) {
-        variance_obs += (obs - mean_obs) * (obs - mean_obs);
-    }
-    variance_obs /= NumSys;
-
-    std::vector<double> sorted_obs = system_mean_obs;
-    std::sort(sorted_obs.begin(), sorted_obs.end());
-    double median_obs = (NumSys % 2 == 0) ? 
-                        (sorted_obs[NumSys / 2 - 1] + sorted_obs[NumSys / 2]) / 2.0 :
-                        sorted_obs[NumSys / 2];
-
-    // 결과 출력
-    printf("Max: %.2f, Min: %.2f, Mean: %.2f, Variance: %.2f, Median: %.2f\n",
-           max_obs, min_obs, mean_obs, variance_obs, median_obs);
+    printf("BeRF total: %.5f\n", mean_obs_rf);
+    printf("BeRF total variance: %.5f\n", variance_obs_rf);
+    printf("BeRF total standard error: %.5f\n", se_obs_rf);
 
     return 0;
 }
